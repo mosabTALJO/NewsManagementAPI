@@ -13,14 +13,12 @@ namespace NewsManagementAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController : ControllerBase
+    public class UsersController : MyController
     {
-        readonly UserManager<NewsUser> userManager;
         readonly IMemoryCache memoryCache;
         readonly IConfiguration configuration;
-        public UsersController(UserManager<NewsUser> userManager, IMemoryCache memoryCache, IConfiguration configuration)
+        public UsersController(UserManager<NewsUser> userManager, IMemoryCache memoryCache, IConfiguration configuration) : base(userManager)
         {
-            this.userManager = userManager;
             this.memoryCache = memoryCache;
             this.configuration = configuration;
         }
@@ -44,17 +42,17 @@ namespace NewsManagementAPI.Controllers
                 {
                     await userManager.AddClaimsAsync(newsUser, [new Claim(userVM.Role.GetPolicyNumber(), userVM.Role.GetPolicyNumber())]);
                     memoryCache.Set(newsUser.Id, userVM.Role.GetPolicyNumber());
-                    return Ok(ApiResponse.CreateSuccess(newsUser.Id));
+                    return Done(newsUser.Id);
                 }
                 else
                 {
                     string error = string.Join('\n', result.Errors.Select(x => x.Code + ": " + x.Description));
-                    return BadRequest(ApiResponse.CreateFailure(error));
+                    return Done<string>(error, ResponseCode.BadRequest);
                 }
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.AllMessages());
+                return Done<string>(ex.AllMessages(), ResponseCode.BadRequest);
             }
         }
 
@@ -65,17 +63,17 @@ namespace NewsManagementAPI.Controllers
             {
                 var user = await userManager.Users.FirstOrDefaultAsync(x => !string.IsNullOrEmpty(x.Email) && x.Email == email);
                 if (user == null)
-                    return NotFound("Email not found!");
+                    return Done<TokenViewModel>("Email not found!", ResponseCode.NotFound);
 
                 if (!await userManager.CheckPasswordAsync(user, password))
-                    return Unauthorized("Incorrect password");
+                    return Done<TokenViewModel>("Incorrect password", ResponseCode.Unauthorized);
 
                 var token = await TokenGenerator.CreateToken(user, userManager, configuration);
-                return Ok(token);
+                return Done(token);
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.AllMessages());
+                return Done<TokenViewModel>(ex.AllMessages(), ResponseCode.BadRequest);
             }
         }
     }

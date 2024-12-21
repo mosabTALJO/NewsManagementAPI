@@ -14,11 +14,9 @@ namespace NewsManagementAPI.Controllers
     public class NewsMaterialsController : MyController
     {
         readonly NewsDbContext newsDbContext;
-        readonly UserManager<NewsUser> userManager;
-        public NewsMaterialsController(NewsDbContext newsDbContext, UserManager<NewsUser> userManager)
+        public NewsMaterialsController(NewsDbContext newsDbContext, UserManager<NewsUser> userManager) : base(userManager)
         {
             this.newsDbContext = newsDbContext;
-            this.userManager = userManager;
         }
 
         [HttpGet]

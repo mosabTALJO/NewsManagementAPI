@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using NewsManagementAPI.Helpers;
+using NewsManagementAPI.Models;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NewsManagementAPI.Controllers
@@ -8,6 +10,11 @@ namespace NewsManagementAPI.Controllers
     [ApiController]
     public class MyController : Controller
     {
+        protected readonly UserManager<NewsUser> userManager;
+        public MyController(UserManager<NewsUser> userManager)
+        {
+            this.userManager = userManager;
+        }
         public ActionResult<ApiResponse<T>> Done<T>(T data) => Ok(new ApiResponse<T>() { Data = data });
         public ActionResult<ApiResponse<T>> Done<T>(string error, ResponseCode code)
         {
