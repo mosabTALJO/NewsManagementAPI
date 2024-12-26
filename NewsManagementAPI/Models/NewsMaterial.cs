@@ -20,6 +20,8 @@
         public string? FinalAttachments { get; set; }
         public bool ExtremelyUrgent { get; set; }
         public bool ContentRequiresConfirmation { get; set; }
+        public bool ContentConfirmed { get; set; }
+        public string? PublisherNote { get; set; }
         public DateTime? DeadLine { get; set; }
         public virtual List<NewsMaterialHistory> Histories { get; set; } = [];
         public virtual List<NewsMaterialPublishStrat> PublishingStrategies { get; set; } = [];
@@ -58,7 +60,8 @@
         Designed = 11,
         AssignedForPublishing = 12,
         Publishing = 13,
-        Published = 14
+        Published = 14,
+        WaitingPublisherConfirmation = 15,
     }
     public enum NewsRegion
     {

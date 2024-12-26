@@ -1,3 +1,5 @@
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -69,15 +71,15 @@ builder.Services.AddAuthentication(option =>
 });
 #endregion
 
-//Mustafa I don't know this
+//Mustafa please add the urls here, I added the localhost ones
 //builder.Services.AddCors(options =>
 //{
 //    options.AddDefaultPolicy(
 //    builder =>
 //    {
 //        builder.WithOrigins("*",
-//            "http://localhost:4200",
-//            "http://localhost:5173",
+//            "https://localhost:7190",
+//            "http://localhost:5125",
 //            "https://cp-ecommerce.usos.co",
 //            "https://Ecommerce.usos.co")
 //               .AllowAnyMethod()
@@ -85,29 +87,47 @@ builder.Services.AddAuthentication(option =>
 //               .AllowCredentials();
 //    });
 //});
+var isDevelopment = builder.Environment.IsDevelopment();
+if (!isDevelopment)
+{
+    //mustafa hangfire settings
+    builder.Services.AddHangfire(configuration =>
+    {
+        configuration.UseFilter(new AutomaticRetryAttribute { Attempts = 0 });
+        configuration.UseSqlServerStorage("HangfireConnectionString", new SqlServerStorageOptions
+        {
+            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+            QueuePollInterval = TimeSpan.Zero,
+            UseRecommendedIsolationLevel = true,
+            DisableGlobalLocks = true
+        });
+    });
+
+    builder.Services.AddHangfireServer();
+}
 
 var app = builder.Build();
-if (!builder.Environment.IsDevelopment())
+if (!isDevelopment)
 {
-    using (var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope())
-    {
-        var dbContext = serviceScope.ServiceProvider.GetService<NewsDbContext>();
-        var userManager = serviceScope.ServiceProvider.GetService<UserManager<NewsUser>>();
-        var memoryCache = serviceScope.ServiceProvider.GetService<IMemoryCache>();
-        var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
-        //var recurringJobManager = serviceScope.ServiceProvider.GetService<IRecurringJobManager>();
-        dbContext?.Database.Migrate();
+    using var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+    var dbContext = serviceScope.ServiceProvider.GetService<NewsDbContext>();
+    var userManager = serviceScope.ServiceProvider.GetService<UserManager<NewsUser>>();
+    var memoryCache = serviceScope.ServiceProvider.GetService<IMemoryCache>();
+    var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
+    //var recurringJobManager = serviceScope.ServiceProvider.GetService<IRecurringJobManager>();
+    dbContext?.Database.Migrate();
 
-        MySeedInitializer.SeedData(userManager, roleManager, memoryCache);
-        var options = serviceScope.ServiceProvider.GetService<IOptions<RequestLocalizationOptions>>();
-        app.UseRequestLocalization(options.Value);
+    MySeedInitializer.SeedData(userManager!, roleManager!, memoryCache!);
+    //mustafa please check this
+    //var options = serviceScope.ServiceProvider.GetService<IOptions<RequestLocalizationOptions>>();
+    //app.UseRequestLocalization(options!.Value);
 
-        //if (!builder.Environment.IsDevelopment())
-        //{
-        //    recurringJobManager.RemoveIfExists("RefreshPrices");
-        //    recurringJobManager.AddOrUpdate<CurrencyRateService>("RefreshPrices", x => x.RefreshRates(), Cron.Hourly(1));
-        //}
-    }
+    //if (!builder.Environment.IsDevelopment())
+    //{
+    //    recurringJobManager.RemoveIfExists("RefreshPrices");
+    //    recurringJobManager.AddOrUpdate<CurrencyRateService>("RefreshPrices", x => x.RefreshRates(), Cron.Hourly(1));
+    //}
 }
 
 // Configure the HTTP request pipeline.

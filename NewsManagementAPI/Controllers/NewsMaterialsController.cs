@@ -24,7 +24,8 @@ namespace NewsManagementAPI.Controllers
 
         [HttpPost("Get")]
         [Authorize]
-        public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get(int pageNo, int pageSize, [FromBody] NewsMaterialStatus[] statuses)
+        public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get(int pageNo, int pageSize,
+            [FromBody] NewsMaterialStatus[] statuses, bool? requiresConfirmation = null)
         {
             try
             {
@@ -35,8 +36,10 @@ namespace NewsManagementAPI.Controllers
                         return Done<NewsMaterialVM[]>($"You don't have permission to view {status} reports!", ResponseCode.Unauthorized);
                 }
                 var newsMaterials = await newsDbContext.NewsMaterials
-                    .Where(x => statuses.Contains(x.CurrentStatus))
+                    .Where(x => statuses.Contains(x.CurrentStatus) || (requiresConfirmation != null && x.ContentRequiresConfirmation == requiresConfirmation))
                     .SkipTake(pageNo, pageSize)
+                    .OrderByDescending(x => x.Urgency)
+                    .ThenByDescending(x => x.Priority)
                     .ToNewsMaterialVM()
                     .ToArrayAsync();
                 return Done(newsMaterials);
@@ -56,15 +59,8 @@ namespace NewsManagementAPI.Controllers
                 var newsMaterial = await newsDbContext.NewsMaterials.Where(x => x.ID == id).ToNewsMaterialVM().FirstOrDefaultAsync();
                 if (newsMaterial == null)
                     return Done<NewsMaterialVM>("News material not found!", ResponseCode.NotFound);
-                if (newsMaterial.CurrentUser == null)
-                    return Done<NewsMaterialVM>("This news material is not assigned to any one!", ResponseCode.Unauthorized);
-                if (newsMaterial.CurrentUser.Id != User.Identity!.Name)
-                {
-                    //User.HasClaim(x => x.ke);
-                    var userRoles = await newsDbContext.UserRoles.Where(x => x.NewsUserID == User.Identity!.Name).ToArrayAsync();
-                    if (userRoles.Any(x => x.Role == NewsUserRole.Admin))
-                        return Done<NewsMaterialVM>("This news material is not assigned to you!", ResponseCode.Unauthorized);
-                }
+                if (!User.IsManager() && newsMaterial.CurrentUser?.Id != User.Identity!.Name)
+                    return Done<NewsMaterialVM>("This news material is not assigned to you!", ResponseCode.Unauthorized);
                 return Done(newsMaterial);
             }
             catch (Exception ex)
@@ -99,7 +95,7 @@ namespace NewsManagementAPI.Controllers
                 };
                 if (newsMaterial.ExtremelyUrgent)
                 {
-                    //todo send notification
+                    //todo send notification to Reviewer
                 }
                 await newsDbContext.NewsMaterials.AddAsync(newsMaterial);
                 await newsDbContext.SaveChangesAsync();
@@ -149,26 +145,26 @@ namespace NewsManagementAPI.Controllers
                     sb.AppendLine($"Priority changed from: {newsMaterial.Priority}, To: {reviewedVM.Priority}");
                 if (newsMaterial.Urgency != reviewedVM.Urgency)
                     sb.AppendLine($"Urgency changed from: {newsMaterial.Urgency}, To: {reviewedVM.Urgency}");
+                if (newsMaterial.ExtremelyUrgent != reviewedVM.ExtremelyUrgent)
+                    sb.AppendLine($"\"Extremely Urgent\" changed from: {newsMaterial.ExtremelyUrgent}, To: {reviewedVM.ExtremelyUrgent}");
+                if (newsMaterial.ContentRequiresConfirmation != reviewedVM.ContentRequiresConfirmation)
+                    sb.AppendLine($"\"Content Requires Confirmation\" changed from: {newsMaterial.ContentRequiresConfirmation}, To: {reviewedVM.ContentRequiresConfirmation}");
                 if (reviewedVM.ExtremelyUrgent)
-                {
-                    //todo
-                }
-                if (reviewedVM.ContentRequiresConfirmation)
-                {
-                    //todo
-                }
+                    newsMaterial.CurrentStatus = NewsMaterialStatus.Edited;//skip editing
+                else
+                    newsMaterial.CurrentStatus = NewsMaterialStatus.Reviewed;
                 newsMaterial.CurrentUserID = null;
-                newsMaterial.CurrentStatus = NewsMaterialStatus.Reviewed;
                 newsMaterial.ReviewNote = reviewedVM.ReviewNote;
                 newsMaterial.Content = reviewedVM.Content;
                 newsMaterial.Urgency = reviewedVM.Urgency;
                 newsMaterial.Priority = reviewedVM.Priority;
                 newsMaterial.DeadLine = reviewedVM.DeadLine;
+                newsMaterial.ExtremelyUrgent = reviewedVM.ExtremelyUrgent;
                 newsMaterial.ContentRequiresConfirmation = reviewedVM.ContentRequiresConfirmation;
                 newsMaterial.PublishingStrategies = reviewedVM.PublishingStrategies.Select(x => new NewsMaterialPublishStrat { NewsMaterialID = newsMaterial.ID, PublishingStrategy = x }).ToList();
                 newsDbContext.NewsMaterials.Update(newsMaterial);
 
-                await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Reviewed, User.Identity!.Name!, null);
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, newsMaterial.CurrentStatus, User.Identity!.Name!, null);
 
                 if (sb.Length > 0)
                     await newsDbContext.CreateNewMaterialLog(newsMaterial.ID, User.Identity!.Name!, sb.ToString());
@@ -211,7 +207,7 @@ namespace NewsManagementAPI.Controllers
             {
                 var newsMaterial = await newsDbContext.NewsMaterials
                     .Where(x => x.ID == newsMaterialId)
-                    .Select(x => new { x.CurrentStatus, x.CurrentUserID })
+                    .Select(x => new { x.CurrentStatus, x.CurrentUserID, x.ContentRequiresConfirmation, x.ContentConfirmed })
                     .FirstOrDefaultAsync();
                 if (newsMaterial == null)
                     return Done<bool>("Not found!", ResponseCode.NotFound);
@@ -219,6 +215,8 @@ namespace NewsManagementAPI.Controllers
                     return Done<bool>("This news material is not in the editing stage!", ResponseCode.BadRequest);
                 if (newsMaterial.CurrentUserID != User.Identity!.Name)
                     return Done<bool>("This news material is not assigned to you!", ResponseCode.Unauthorized);
+                if (newsMaterial.ContentRequiresConfirmation && !newsMaterial.ContentConfirmed)
+                    return Done<bool>("This news material requires the publisher's confirmation first!", ResponseCode.BadRequest);
 
                 await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
                     .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Editing));
@@ -342,7 +340,10 @@ namespace NewsManagementAPI.Controllers
                     sb.AppendLine($"Final content changed from: {newsMaterial.FinalContent}, To: {proofreadedVM.FinalContent}");
 
                 newsMaterial.CurrentUserID = null;
-                newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
+                if (newsMaterial.ExtremelyUrgent)
+                    newsMaterial.CurrentStatus = NewsMaterialStatus.Designed;
+                else
+                    newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
                 newsMaterial.FinalContent = proofreadedVM.FinalContent;
                 newsDbContext.NewsMaterials.Update(newsMaterial);
 
@@ -388,7 +389,7 @@ namespace NewsManagementAPI.Controllers
             {
                 var newsMaterial = await newsDbContext.NewsMaterials
                     .Where(x => x.ID == newsMaterialId)
-                    .Select(x => new { x.CurrentStatus, x.CurrentUserID })
+                    .Select(x => new { x.CurrentStatus, x.CurrentUserID, x.ContentRequiresConfirmation, x.ContentConfirmed })
                     .FirstOrDefaultAsync();
                 if (newsMaterial == null)
                     return Done<bool>("Not found!", ResponseCode.NotFound);
@@ -396,6 +397,8 @@ namespace NewsManagementAPI.Controllers
                     return Done<bool>("This news material is not in the designing stage!", ResponseCode.BadRequest);
                 if (newsMaterial.CurrentUserID != User.Identity!.Name)
                     return Done<bool>("This news material is not assigned to you!", ResponseCode.Unauthorized);
+                if (newsMaterial.ContentRequiresConfirmation && !newsMaterial.ContentConfirmed)
+                    return Done<bool>("This news material requires the publisher's confirmation first!", ResponseCode.BadRequest);
 
                 await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
                     .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Designing));
@@ -465,6 +468,25 @@ namespace NewsManagementAPI.Controllers
                     SocialMediaID = x.SocialMediaID,
                 }));
                 await newsDbContext.SaveChangesAsync();
+                return Done(true);
+            }
+            catch (Exception ex)
+            {
+                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
+        [HttpPut("ConfirmContent")]
+        [Authorize(Policy = nameof(NewsUserRole.Publisher))]
+        public async Task<ActionResult<ApiResponse<bool>>> ConfirmContent(int materialId, bool confirmed, string? note = null)
+        {
+            try
+            {
+                var count = await newsDbContext.NewsMaterials.Where(x => x.ID == materialId && x.ContentRequiresConfirmation)
+                                        .ExecuteUpdateAsync(p => p.SetProperty(x => x.ContentConfirmed, confirmed)
+                                                                  .SetProperty(x => x.PublisherNote, note));
+                if (count == 0)
+                    return Done<bool>("Not found", ResponseCode.NotFound);
                 return Done(true);
             }
             catch (Exception ex)
