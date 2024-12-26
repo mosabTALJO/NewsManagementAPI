@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NewsManagementAPI.Controllers
 {

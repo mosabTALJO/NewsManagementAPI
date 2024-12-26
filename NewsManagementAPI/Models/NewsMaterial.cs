@@ -10,16 +10,19 @@
         public NewsMaterialType Type { get; set; }
         public Priority Priority { get; set; }
         public Urgency Urgency { get; set; }
+        public NewsRegion NewsRegion { get; set; }
         public string? Attachments { get; set; }
         public string? Images { get; set; }
         public string? ReviewNote { get; set; }
         public string? EditorNote { get; set; }
-        public string? PublishingStrategies { get; set; }
-        //public List<PublishingStrategy> PublishingStrategies { get; set; } = [];
         public NewsMaterialStatus CurrentStatus { get; set; }
         public string? FinalContent { get; set; }
         public string? FinalAttachments { get; set; }
-        public virtual List<NewsMaterialHistory>? Histories { get; set; }
+        public bool ExtremelyUrgent { get; set; }
+        public bool ContentRequiresConfirmation { get; set; }
+        public DateTime? DeadLine { get; set; }
+        public virtual List<NewsMaterialHistory> Histories { get; set; } = [];
+        public virtual List<NewsMaterialPublishStrat> PublishingStrategies { get; set; } = [];
     }
     public enum NewsMaterialType
     {
@@ -39,23 +42,27 @@
         Urgent = 1,
         VeryUrgent = 2
     }
-    public enum PublishingStrategy
-    {
-        Text = 0,
-        Visual = 1,
-        Images = 2,
-        Audio = 3,
-        Interactive = 4
-    }
     public enum NewsMaterialStatus
     {
         Reported = 0,
         Reviewing = 1,
         Reviewed = 2,
-        Editing = 3,
-        Edited = 4,
-        Designing = 5,
-        Designed = 6,
-        Published = 7
+        AssignedForEditing = 3,
+        Editing = 4,
+        Edited = 5,
+        AssignedForProofreading = 6,
+        Proofreading = 7,
+        Proofreaded = 8, //تدقيق لغوي
+        AssignedForDesigning = 9,
+        Designing = 10,
+        Designed = 11,
+        AssignedForPublishing = 12,
+        Publishing = 13,
+        Published = 14
+    }
+    public enum NewsRegion
+    {
+        Local = 0,
+        International = 1,
     }
 }

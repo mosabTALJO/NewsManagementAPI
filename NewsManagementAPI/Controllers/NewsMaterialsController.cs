@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NewsManagementAPI.Data;
@@ -7,6 +9,7 @@ using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
 using NewsManagementAPI.ViewModels;
+using System.Security.Claims;
 using System.Text;
 
 namespace NewsManagementAPI.Controllers
@@ -19,54 +22,54 @@ namespace NewsManagementAPI.Controllers
             this.newsDbContext = newsDbContext;
         }
 
-        [HttpGet]
+        [HttpPost("Get")]
         [Authorize]
-        public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get(int pageNo, int pageSize)
+        public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get(int pageNo, int pageSize, [FromBody] NewsMaterialStatus[] statuses)
         {
             try
             {
-                var userRole = await userManager.Users.Where(x => x.Id == User.Identity!.Name).Select(x => x.Role).FirstOrDefaultAsync();
-                NewsMaterialStatus? status = userRole == NewsUserRole.Reviewer ? NewsMaterialStatus.Reported
-                    : userRole == NewsUserRole.Editor ? NewsMaterialStatus.Reviewed
-                    : userRole == NewsUserRole.Designer ? NewsMaterialStatus.Edited
-                    : userRole == NewsUserRole.Publisher ? NewsMaterialStatus.Designed : null;
-                if (status == null)
-                    return Done<NewsMaterialVM[]>("Unauthorized", ResponseCode.Unauthorized);
+                var userRoles = await newsDbContext.UserRoles.Where(x => x.NewsUserID == User.Identity!.Name).ToListAsync();
+                foreach (var status in statuses)
+                {
+                    if (!userRoles.HasPemission(status))
+                        return Done<NewsMaterialVM[]>($"You don't have permission to view {status} reports!", ResponseCode.Unauthorized);
+                }
                 var newsMaterials = await newsDbContext.NewsMaterials
-                    .Where(x => x.CurrentStatus == status)
+                    .Where(x => statuses.Contains(x.CurrentStatus))
                     .SkipTake(pageNo, pageSize)
-                    .Select(x => new NewsMaterialVM
-                    {
-                        ID = x.ID,
-                        Content = x.Content,
-                        Attachments = x.Attachments,
-                        CurrentStatus = x.CurrentStatus,
-                        EditorNote = x.EditorNote,
-                        FinalAttachments = x.FinalAttachments,
-                        FinalContent = x.FinalContent,
-                        Images = x.Images,
-                        Priority = x.Priority,
-                        ReviewNote = x.ReviewNote,
-                        Type = x.Type,
-                        Urgency = x.Urgency,
-                        PublishingStrategies = x.PublishingStrategies,
-                        Histories = x.Histories!.Select(h => new NewsMaterialHistoryVM
-                        {
-                            EndDate = h.EndDate,
-                            NewsUserID = h.NewsUserID,
-                            ID = h.ID,
-                            NewsMaterialID = h.NewsMaterialID,
-                            StartDate = h.StartDate,
-                            Status = h.Status,
-                        }).ToList(),
-                        CurrentUser = x.CurrentUser == null ? null : new() { DisplayName = x.CurrentUser.DisplayName, Id = x.CurrentUserID! }
-                    })
+                    .ToNewsMaterialVM()
                     .ToArrayAsync();
                 return Done(newsMaterials);
             }
             catch (Exception ex)
             {
                 return Done<NewsMaterialVM[]>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
+        [HttpGet("{id}")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<NewsMaterialVM>>> Get(int id)
+        {
+            try
+            {
+                var newsMaterial = await newsDbContext.NewsMaterials.Where(x => x.ID == id).ToNewsMaterialVM().FirstOrDefaultAsync();
+                if (newsMaterial == null)
+                    return Done<NewsMaterialVM>("News material not found!", ResponseCode.NotFound);
+                if (newsMaterial.CurrentUser == null)
+                    return Done<NewsMaterialVM>("This news material is not assigned to any one!", ResponseCode.Unauthorized);
+                if (newsMaterial.CurrentUser.Id != User.Identity!.Name)
+                {
+                    //User.HasClaim(x => x.ke);
+                    var userRoles = await newsDbContext.UserRoles.Where(x => x.NewsUserID == User.Identity!.Name).ToArrayAsync();
+                    if (userRoles.Any(x => x.Role == NewsUserRole.Admin))
+                        return Done<NewsMaterialVM>("This news material is not assigned to you!", ResponseCode.Unauthorized);
+                }
+                return Done(newsMaterial);
+            }
+            catch (Exception ex)
+            {
+                return Done<NewsMaterialVM>(ex.AllMessages(), ResponseCode.BadRequest);
             }
         }
 
@@ -84,16 +87,20 @@ namespace NewsManagementAPI.Controllers
                     Priority = reportedNews.Priority,
                     Urgency = reportedNews.Urgency,
                     Type = reportedNews.Type,
+                    ExtremelyUrgent = reportedNews.ExtremelyUrgent,
                     CurrentUserID = User.Identity!.Name,
                     CurrentStatus = NewsMaterialStatus.Reported,
                     Histories = [new()
                     {
                         NewsUserID = User.Identity.Name!,
                         Status = NewsMaterialStatus.Reported,
-                        StartDate = DateTime.UtcNow,
-                        EndDate = DateTime.UtcNow,
+                        Date = DateTime.UtcNow,
                     }]
                 };
+                if (newsMaterial.ExtremelyUrgent)
+                {
+                    //todo send notification
+                }
                 await newsDbContext.NewsMaterials.AddAsync(newsMaterial);
                 await newsDbContext.SaveChangesAsync();
                 return Done(newsMaterial.ID);
@@ -116,13 +123,7 @@ namespace NewsManagementAPI.Controllers
                     .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, User.Identity!.Name)
                                               .SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Reviewing));
 
-                await newsDbContext.NewsMaterialHistories.AddAsync(new()
-                {
-                    NewsUserID = User.Identity!.Name!,
-                    NewsMaterialID = newsMaterialId,
-                    StartDate = DateTime.UtcNow,
-                    Status = NewsMaterialStatus.Reviewing,
-                });
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, NewsMaterialStatus.Reviewing, User.Identity!.Name!, null);
                 await newsDbContext.SaveChangesAsync();
                 return Done(true);
             }
@@ -148,21 +149,51 @@ namespace NewsManagementAPI.Controllers
                     sb.AppendLine($"Priority changed from: {newsMaterial.Priority}, To: {reviewedVM.Priority}");
                 if (newsMaterial.Urgency != reviewedVM.Urgency)
                     sb.AppendLine($"Urgency changed from: {newsMaterial.Urgency}, To: {reviewedVM.Urgency}");
+                if (reviewedVM.ExtremelyUrgent)
+                {
+                    //todo
+                }
+                if (reviewedVM.ContentRequiresConfirmation)
+                {
+                    //todo
+                }
                 newsMaterial.CurrentUserID = null;
                 newsMaterial.CurrentStatus = NewsMaterialStatus.Reviewed;
                 newsMaterial.ReviewNote = reviewedVM.ReviewNote;
                 newsMaterial.Content = reviewedVM.Content;
                 newsMaterial.Urgency = reviewedVM.Urgency;
                 newsMaterial.Priority = reviewedVM.Priority;
+                newsMaterial.DeadLine = reviewedVM.DeadLine;
+                newsMaterial.ContentRequiresConfirmation = reviewedVM.ContentRequiresConfirmation;
+                newsMaterial.PublishingStrategies = reviewedVM.PublishingStrategies.Select(x => new NewsMaterialPublishStrat { NewsMaterialID = newsMaterial.ID, PublishingStrategy = x }).ToList();
                 newsDbContext.NewsMaterials.Update(newsMaterial);
 
-                await newsDbContext.NewsMaterialHistories
-                    .Where(x => x.NewsMaterialID == newsMaterial.ID && x.NewsUserID == User.Identity!.Name
-                        && x.Status == NewsMaterialStatus.Reviewing && x.EndDate == null)
-                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.EndDate, DateTime.UtcNow)
-                                              .SetProperty(x => x.Status, NewsMaterialStatus.Reviewed));
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Reviewed, User.Identity!.Name!, null);
+
                 if (sb.Length > 0)
-                    await CreateLog(sb.ToString(), newsMaterial.ID);
+                    await newsDbContext.CreateNewMaterialLog(newsMaterial.ID, User.Identity!.Name!, sb.ToString());
+                await newsDbContext.SaveChangesAsync();
+                return Done(true);
+            }
+            catch (Exception ex)
+            {
+                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
+        [HttpPut("AssignEdit")]
+        [Authorize(Policy = nameof(NewsUserRole.EditingManager))]
+        public async Task<ActionResult<ApiResponse<bool>>> AssignEdit(int newsMaterialId, string editorId)
+        {
+            try
+            {
+                var count = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, editorId)
+                                              .SetProperty(x => x.CurrentStatus, NewsMaterialStatus.AssignedForEditing));
+                if (count == 0)
+                    return Done<bool>("Not found!", ResponseCode.NotFound);
+
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, NewsMaterialStatus.AssignedForEditing, editorId, User.Identity!.Name!);
                 await newsDbContext.SaveChangesAsync();
                 return Done(true);
             }
@@ -178,19 +209,20 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                if (await newsDbContext.NewsMaterials.AnyAsync(x => x.ID == newsMaterialId && x.CurrentStatus == NewsMaterialStatus.Reviewed) == false)
+                var newsMaterial = await newsDbContext.NewsMaterials
+                    .Where(x => x.ID == newsMaterialId)
+                    .Select(x => new { x.CurrentStatus, x.CurrentUserID })
+                    .FirstOrDefaultAsync();
+                if (newsMaterial == null)
                     return Done<bool>("Not found!", ResponseCode.NotFound);
-                var newsMaterial = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
-                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, User.Identity!.Name)
-                                              .SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Editing));
+                if (newsMaterial.CurrentStatus != NewsMaterialStatus.AssignedForEditing)
+                    return Done<bool>("This news material is not in the editing stage!", ResponseCode.BadRequest);
+                if (newsMaterial.CurrentUserID != User.Identity!.Name)
+                    return Done<bool>("This news material is not assigned to you!", ResponseCode.Unauthorized);
 
-                await newsDbContext.NewsMaterialHistories.AddAsync(new()
-                {
-                    NewsUserID = User.Identity!.Name!,
-                    NewsMaterialID = newsMaterialId,
-                    StartDate = DateTime.UtcNow,
-                    Status = NewsMaterialStatus.Editing,
-                });
+                await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Editing));
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, NewsMaterialStatus.Editing, User.Identity!.Name!, null);
                 await newsDbContext.SaveChangesAsync();
                 return Done(true);
             }
@@ -210,29 +242,135 @@ namespace NewsManagementAPI.Controllers
                 if (newsMaterial == null)
                     return Done<bool>("Not found!", ResponseCode.NotFound);
                 StringBuilder sb = new();
-                if (newsMaterial.FinalContent != editedVM.FinalContent)
+                if (!string.IsNullOrEmpty(newsMaterial.FinalContent) && newsMaterial.FinalContent != editedVM.FinalContent)
                     sb.AppendLine($"Final content changed from: {newsMaterial.FinalContent}, To: {editedVM.FinalContent}");
+                if (!editedVM.Done)
+                {
+                    newsMaterial.CurrentStatus = NewsMaterialStatus.Reviewed;
+                    await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Edited, User.Identity!.Name!, null);
+                }
+                else if (editedVM.SkipProofreading)
+                {
+                    if (await newsDbContext.UserRoles.AnyAsync(x => x.NewsUserID == User.Identity!.Name && x.Role == NewsUserRole.Proofreader) == false)
+                        return Done<bool>("You don't have proofreading permission!", ResponseCode.Unauthorized);
+                    newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
+                    await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Proofreaded, User.Identity!.Name!, null);
+                }
+                else
+                {
+                    newsMaterial.CurrentStatus = NewsMaterialStatus.Edited;
+                    await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Edited, User.Identity!.Name!, null);
+                }
                 newsMaterial.CurrentUserID = null;
-                newsMaterial.CurrentStatus = editedVM.Done ? NewsMaterialStatus.Edited : NewsMaterialStatus.Reviewed;
                 newsMaterial.EditorNote = editedVM.EditorNote;
                 newsMaterial.FinalContent = editedVM.FinalContent;
-                newsMaterial.PublishingStrategies = editedVM.PublishingStrategies;
                 newsDbContext.NewsMaterials.Update(newsMaterial);
 
-                if (editedVM.Done)
-                    await newsDbContext.NewsMaterialHistories
-                        .Where(x => x.NewsMaterialID == newsMaterial.ID && x.NewsUserID == User.Identity!.Name
-                            && x.Status == NewsMaterialStatus.Editing && x.EndDate == null)
-                        .ExecuteUpdateAsync(p => p.SetProperty(x => x.EndDate, DateTime.UtcNow)
-                                                  .SetProperty(x => x.Status, NewsMaterialStatus.Edited));
-                else
-                    await newsDbContext.NewsMaterialHistories
-                        .Where(x => x.NewsMaterialID == newsMaterial.ID && x.NewsUserID == User.Identity!.Name
-                            && x.Status == NewsMaterialStatus.Editing && x.EndDate == null)
-                        .ExecuteUpdateAsync(p => p.SetProperty(x => x.EndDate, DateTime.UtcNow)
-                                                  .SetProperty(x => x.Status, NewsMaterialStatus.Reviewed));
                 if (sb.Length > 0)
-                    await CreateLog(sb.ToString(), newsMaterial.ID);
+                    await newsDbContext.CreateNewMaterialLog(newsMaterial.ID, User.Identity!.Name!, sb.ToString());
+                await newsDbContext.SaveChangesAsync();
+                return Done(true);
+            }
+            catch (Exception ex)
+            {
+                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
+        [HttpPut("AssignProofread")]
+        [Authorize(Policy = nameof(NewsUserRole.ProofreadingManager))]
+        public async Task<ActionResult<ApiResponse<bool>>> AssignProofread(int newsMaterialId, string proofreaderId)
+        {
+            try
+            {
+                var count = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, proofreaderId)
+                                              .SetProperty(x => x.CurrentStatus, NewsMaterialStatus.AssignedForProofreading));
+                if (count == 0)
+                    return Done<bool>("Not found!", ResponseCode.NotFound);
+
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, NewsMaterialStatus.AssignedForProofreading, proofreaderId, User.Identity!.Name!);
+                await newsDbContext.SaveChangesAsync();
+                return Done(true);
+            }
+            catch (Exception ex)
+            {
+                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
+        [HttpPut("BeginProofread")]
+        [Authorize(Policy = nameof(NewsUserRole.Proofreader))]
+        public async Task<ActionResult<ApiResponse<bool>>> BeginProofread(int newsMaterialId)
+        {
+            try
+            {
+                var newsMaterial = await newsDbContext.NewsMaterials
+                    .Where(x => x.ID == newsMaterialId)
+                    .Select(x => new { x.CurrentStatus, x.CurrentUserID })
+                    .FirstOrDefaultAsync();
+                if (newsMaterial == null)
+                    return Done<bool>("Not found!", ResponseCode.NotFound);
+                if (newsMaterial.CurrentStatus != NewsMaterialStatus.AssignedForProofreading)
+                    return Done<bool>("This news material is not in the proofreading stage!", ResponseCode.BadRequest);
+                if (newsMaterial.CurrentUserID != User.Identity!.Name)
+                    return Done<bool>("This news material is not assigned to you!", ResponseCode.Unauthorized);
+
+                await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Proofreading));
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, NewsMaterialStatus.Proofreading, User.Identity!.Name!, null);
+                await newsDbContext.SaveChangesAsync();
+                return Done(true);
+            }
+            catch (Exception ex)
+            {
+                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
+        [HttpPut("EndProofread")]
+        [Authorize(Policy = nameof(NewsUserRole.Proofreader))]
+        public async Task<ActionResult<ApiResponse<bool>>> EndProofread([FromBody] NewsMaterialProofreadedVM proofreadedVM)
+        {
+            try
+            {
+                var newsMaterial = await newsDbContext.NewsMaterials.AsNoTracking().FirstOrDefaultAsync(x => x.ID == proofreadedVM.ID);
+                if (newsMaterial == null)
+                    return Done<bool>("Not found!", ResponseCode.NotFound);
+                StringBuilder sb = new();
+                if (newsMaterial.FinalContent != proofreadedVM.FinalContent)
+                    sb.AppendLine($"Final content changed from: {newsMaterial.FinalContent}, To: {proofreadedVM.FinalContent}");
+
+                newsMaterial.CurrentUserID = null;
+                newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
+                newsMaterial.FinalContent = proofreadedVM.FinalContent;
+                newsDbContext.NewsMaterials.Update(newsMaterial);
+
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Proofreaded, User.Identity!.Name!, null);
+                if (sb.Length > 0)
+                    await newsDbContext.CreateNewMaterialLog(newsMaterial.ID, User.Identity!.Name!, sb.ToString());
+                await newsDbContext.SaveChangesAsync();
+                return Done(true);
+            }
+            catch (Exception ex)
+            {
+                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
+        [HttpPut("AssignDesign")]
+        [Authorize(Policy = nameof(NewsUserRole.EditingManager))]
+        public async Task<ActionResult<ApiResponse<bool>>> AssignDesign(int newsMaterialId, string designerId)
+        {
+            try
+            {
+                var count = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, designerId)
+                                              .SetProperty(x => x.CurrentStatus, NewsMaterialStatus.AssignedForDesigning));
+                if (count == 0)
+                    return Done<bool>("Not found!", ResponseCode.NotFound);
+
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, NewsMaterialStatus.AssignedForEditing, designerId, User.Identity!.Name!);
                 await newsDbContext.SaveChangesAsync();
                 return Done(true);
             }
@@ -248,19 +386,20 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                if (await newsDbContext.NewsMaterials.AnyAsync(x => x.ID == newsMaterialId && x.CurrentStatus == NewsMaterialStatus.Edited) == false)
+                var newsMaterial = await newsDbContext.NewsMaterials
+                    .Where(x => x.ID == newsMaterialId)
+                    .Select(x => new { x.CurrentStatus, x.CurrentUserID })
+                    .FirstOrDefaultAsync();
+                if (newsMaterial == null)
                     return Done<bool>("Not found!", ResponseCode.NotFound);
-                var newsMaterial = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
-                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, User.Identity!.Name)
-                                              .SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Designing));
+                if (newsMaterial.CurrentStatus != NewsMaterialStatus.AssignedForDesigning)
+                    return Done<bool>("This news material is not in the designing stage!", ResponseCode.BadRequest);
+                if (newsMaterial.CurrentUserID != User.Identity!.Name)
+                    return Done<bool>("This news material is not assigned to you!", ResponseCode.Unauthorized);
 
-                await newsDbContext.NewsMaterialHistories.AddAsync(new()
-                {
-                    NewsUserID = User.Identity!.Name!,
-                    NewsMaterialID = newsMaterialId,
-                    StartDate = DateTime.UtcNow,
-                    Status = NewsMaterialStatus.Designing,
-                });
+                await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Designing));
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, NewsMaterialStatus.Designing, User.Identity!.Name!, null);
                 await newsDbContext.SaveChangesAsync();
                 return Done(true);
             }
@@ -280,27 +419,24 @@ namespace NewsManagementAPI.Controllers
                 if (newsMaterial == null)
                     return Done<bool>("Not found!", ResponseCode.NotFound);
                 StringBuilder sb = new();
-                if (newsMaterial.FinalAttachments != designedVM.FinalAttachments)
+                if (!string.IsNullOrEmpty(newsMaterial.FinalAttachments) && newsMaterial.FinalAttachments != designedVM.FinalAttachments)
                     sb.AppendLine($"Final attachments changed from: {newsMaterial.FinalAttachments}, To: {designedVM.FinalAttachments}");
+                if (designedVM.Done)
+                {
+                    newsMaterial.CurrentStatus = NewsMaterialStatus.Designed;
+                    await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Designed, User.Identity!.Name!, null);
+                }
+                else
+                {
+                    newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
+                    await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Designed, User.Identity!.Name!, null);
+                }
                 newsMaterial.CurrentUserID = null;
-                newsMaterial.CurrentStatus = designedVM.Done ? NewsMaterialStatus.Designed : NewsMaterialStatus.Edited;
                 newsMaterial.FinalAttachments = designedVM.FinalAttachments;
                 newsDbContext.NewsMaterials.Update(newsMaterial);
 
-                if (designedVM.Done)
-                    await newsDbContext.NewsMaterialHistories
-                        .Where(x => x.NewsMaterialID == newsMaterial.ID && x.NewsUserID == User.Identity!.Name
-                            && x.Status == NewsMaterialStatus.Designing && x.EndDate == null)
-                        .ExecuteUpdateAsync(p => p.SetProperty(x => x.EndDate, DateTime.UtcNow)
-                                                  .SetProperty(x => x.Status, NewsMaterialStatus.Designed));
-                else
-                    await newsDbContext.NewsMaterialHistories
-                        .Where(x => x.NewsMaterialID == newsMaterial.ID && x.NewsUserID == User.Identity!.Name
-                            && x.Status == NewsMaterialStatus.Designing && x.EndDate == null)
-                        .ExecuteUpdateAsync(p => p.SetProperty(x => x.EndDate, DateTime.UtcNow)
-                                                  .SetProperty(x => x.Status, NewsMaterialStatus.Edited));
                 if (sb.Length > 0)
-                    await CreateLog(sb.ToString(), newsMaterial.ID);
+                    await newsDbContext.CreateNewMaterialLog(newsMaterial.ID, User.Identity!.Name!, sb.ToString());
                 await newsDbContext.SaveChangesAsync();
                 return Done(true);
             }
@@ -316,19 +452,12 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                if (await newsDbContext.NewsMaterials.AnyAsync(x => x.ID == publishedVM.ID && x.CurrentStatus == NewsMaterialStatus.Designed) == false)
-                    return Done<bool>("Not found!", ResponseCode.NotFound);
-                await newsDbContext.NewsMaterials.Where(x => x.ID == publishedVM.ID)
+                var count = await newsDbContext.NewsMaterials.Where(x => x.ID == publishedVM.ID)
                     .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, x => null)
                                               .SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Published));
-
-                await newsDbContext.NewsMaterialHistories.AddAsync(new()
-                {
-                    NewsUserID = User.Identity!.Name!,
-                    NewsMaterialID = publishedVM.ID,
-                    StartDate = DateTime.UtcNow,
-                    Status = NewsMaterialStatus.Published,
-                });
+                if (count == 0)
+                    return Done<bool>("Not found!", ResponseCode.NotFound);
+                await newsDbContext.CreateNewsMaterialHistory(publishedVM.ID, NewsMaterialStatus.Published, User.Identity!.Name!, null);
                 await newsDbContext.NewsSocialMedias.AddRangeAsync(publishedVM.SocialMedias.Select(x => new NewsSocialMedia
                 {
                     Url = x.Url,
@@ -342,16 +471,6 @@ namespace NewsManagementAPI.Controllers
             {
                 return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
             }
-        }
-
-        async Task CreateLog(string log, int newsMaterialId)
-        {
-            await newsDbContext.NewsMaterialLogs.AddAsync(new()
-            {
-                Log = log,
-                NewsUserID = User.Identity!.Name!,
-                NewsMaterialID = newsMaterialId,
-            });
         }
     }
 }

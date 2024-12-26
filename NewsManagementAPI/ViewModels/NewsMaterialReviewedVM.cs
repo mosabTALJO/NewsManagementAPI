@@ -9,5 +9,9 @@ namespace NewsManagementAPI.ViewModels
         public Priority Priority { get; set; }
         public Urgency Urgency { get; set; }
         public string? ReviewNote { get; set; }
+        public bool ExtremelyUrgent { get; set; }
+        public bool ContentRequiresConfirmation { get; set; }
+        public DateTime? DeadLine { get; set; }
+        public List<PublishingStrategy> PublishingStrategies { get; set; } = [];
     }
 }

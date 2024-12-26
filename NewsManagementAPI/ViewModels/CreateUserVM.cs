@@ -9,6 +9,6 @@ namespace NewsManagementAPI.ViewModels
         public required string Password { get; set; }
         public string? PhoneNumber { get; set; }
         public string? Image { get; set; }
-        public NewsUserRole Role { get; set; }
+        public List<NewsUserRole> Roles { get; set; } = [];
     }
 }

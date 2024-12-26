@@ -7,8 +7,9 @@
         public NewsMaterial? NewsMaterial { get; set; }
         public required string NewsUserID { get; set; }
         public NewsUser? NewsUser { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
+        public string? AssignerID { get; set; }
+        public NewsUser? Assigner { get; set; }
+        public DateTime Date { get; set; }
         public NewsMaterialStatus Status { get; set; }
     }
 }

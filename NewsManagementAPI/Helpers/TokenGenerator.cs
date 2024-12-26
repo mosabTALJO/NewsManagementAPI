@@ -10,11 +10,12 @@ namespace NewsManagementAPI.Helpers
 {
     public class TokenGenerator
     {
-        public static async Task<TokenViewModel> CreateToken(NewsUser user, UserManager<NewsUser> userManager, IConfiguration configuration)
+        public static async Task<TokenVM> CreateToken(NewsUser user, UserManager<NewsUser> userManager, IConfiguration configuration)
         {
             var claims = await userManager.GetClaimsAsync(user) ?? [];
-            claims.Add(new Claim(ClaimTypes.Name, user.Id));
-            claims.Add(new Claim(ClaimTypes.Role, user.Role.ToString()));
+            claims.Add(new(ClaimTypes.Name, user.Id));
+            foreach (var r in user.Roles)
+                claims.Add(new(ClaimTypes.Role, r.Role.GetPolicyNumber()));
 
             var signinKey = new SymmetricSecurityKey(
               Encoding.UTF8.GetBytes(configuration["Jwt:SigningKey"]!));
@@ -27,14 +28,14 @@ namespace NewsManagementAPI.Helpers
               signingCredentials: new SigningCredentials(signinKey, SecurityAlgorithms.HmacSha256)
             );
 
-            return new TokenViewModel
+            return new TokenVM
             {
-                userID = user.Id,
-                token = new JwtSecurityTokenHandler().WriteToken(token),
-                expiration = token.ValidTo,
+                UserID = user.Id,
+                Token = new JwtSecurityTokenHandler().WriteToken(token),
+                Expiration = token.ValidTo,
                 UserName = user.UserName,
                 DisplayName = user.DisplayName,
-                Role = user.Role
+                Roles = user.Roles.Select(x => x.Role).ToList()
             };
         }
         public static string GeneratePassword(int passLength)

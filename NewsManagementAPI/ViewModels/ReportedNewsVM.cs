@@ -10,5 +10,6 @@ namespace NewsManagementAPI.ViewModels
         public Urgency Urgency { get; set; }
         public string? Attachments { get; set; }
         public string? Images { get; set; }
+        public bool ExtremelyUrgent { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
 using NewsManagementAPI.Models;
+using NewsManagementAPI.ViewModels;
 using System.Security.Claims;
 
 namespace NewsManagementAPI.Helpers
@@ -28,13 +29,13 @@ namespace NewsManagementAPI.Helpers
                     DisplayName = "Admin",
                     Email = "admin@ecommerce.com",
                     SecurityStamp = Guid.NewGuid().ToString(),
-                    Role = NewsUserRole.Admin
+                    Roles = [new() { Role = NewsUserRole.Admin }]
                 };
                 await userManager.CreateAsync(user, "P@ssw0rd");
             }
             //Remove currenct policies
             await userManager.RemoveClaimsAsync(user, await userManager.GetClaimsAsync(user));
-            await userManager.AddClaimsAsync(user, [new Claim(user.Role.GetPolicyNumber(), user.Role.GetPolicyNumber())]);
+            await userManager.AddClaimsAsync(user, user.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
         }
         private static async Task SeedRoles(RoleManager<IdentityRole> roleManager)
         {

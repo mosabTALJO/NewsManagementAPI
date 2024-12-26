@@ -20,5 +20,26 @@ namespace NewsManagementAPI.Data
         public DbSet<NewsMaterialLog> NewsMaterialLogs { get; set; }
         public DbSet<SocialMedia> SocialMedias { get; set; }
         public DbSet<NewsSocialMedia> NewsSocialMedias { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
+        public async Task CreateNewsMaterialHistory(int newsMaterialId, NewsMaterialStatus status, string userID, string? assignerID)
+        {
+            await NewsMaterialHistories.AddAsync(new()
+            {
+                NewsUserID = userID,
+                NewsMaterialID = newsMaterialId,
+                Date = DateTime.UtcNow,
+                Status = status,
+                AssignerID = assignerID
+            });
+        }
+        public async Task CreateNewMaterialLog(int newsMaterialId, string userID, string log)
+        {
+            await NewsMaterialLogs.AddAsync(new()
+            {
+                Log = log,
+                NewsUserID = userID,
+                NewsMaterialID = newsMaterialId,
+            });
+        }
     }
 }

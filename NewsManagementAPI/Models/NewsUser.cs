@@ -4,13 +4,9 @@ namespace NewsManagementAPI.Models
 {
     public class NewsUser : IdentityUser
     {
-        //public int ID { get; set; }
         public required string DisplayName { get; set; }
-        //public required string Email { get; set; }
-        //public required string Password { get; set; }
-        //public string? PhoneNumber { get; set; }
         public string? Image { get; set; }
-        public NewsUserRole Role { get; set; }
+        public List<UserRole> Roles { get; set; } = [];
     }
     public enum NewsUserRole
     {
@@ -18,7 +14,12 @@ namespace NewsManagementAPI.Models
         Reporter = 1,
         Reviewer = 2,
         Editor = 3,
-        Designer = 4,
-        Publisher = 5,
+        EditingManager = 4,
+        Proofreader = 5,
+        ProofreadingManager = 6,
+        Designer = 7,
+        DesigningManager = 8,
+        Publisher = 9,
+        PublishingManager = 10,
     }
 }
