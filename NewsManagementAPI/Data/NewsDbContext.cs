@@ -12,8 +12,7 @@ namespace NewsManagementAPI.Data
             if (Debugger.IsAttached)
                 optionsBuilder.UseNpgsql(@"Host=37.27.57.167; Port=5432; Database=Ecommerce; Username=ecomm; Password=aser@sWwer##4as");
             else
-                optionsBuilder.UseSqlServer("Server=localhost; Database=News;User ID=newsadmin;Password=asw34##455@Awe;Encrypt=False");
-            //"server=localhost;database=MasjedDB;User ID=Masjed;password=cbffe2404c29A@1;MultipleActiveResultSets=True;Encrypt=False"
+                optionsBuilder.UseNpgsql("Server=localhost; Database=News;User ID=newsadmin;Password=asw34##455@Awe;Encrypt=False");
         }
         public DbSet<NewsMaterial> NewsMaterials { get; set; }
         public DbSet<NewsMaterialHistory> NewsMaterialHistories { get; set; }

@@ -1,11 +1,8 @@
-using Hangfire;
-using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NewsManagementAPI.Data;
 using NewsManagementAPI.Helpers;
@@ -14,15 +11,9 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
-
-//Mustafa do we need both this and the one under it?
-//builder.Services.AddScoped<DbContext, NewsDbContext>();
 builder.Services.AddDbContext<NewsDbContext>();
 
 #region Authentication
@@ -71,40 +62,24 @@ builder.Services.AddAuthentication(option =>
 });
 #endregion
 
-//Mustafa please add the urls here, I added the localhost ones
-//builder.Services.AddCors(options =>
-//{
-//    options.AddDefaultPolicy(
-//    builder =>
-//    {
-//        builder.WithOrigins("*",
-//            "https://localhost:7190",
-//            "http://localhost:5125",
-//            "https://cp-ecommerce.usos.co",
-//            "https://Ecommerce.usos.co")
-//               .AllowAnyMethod()
-//               .AllowAnyHeader()
-//               .AllowCredentials();
-//    });
-//});
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(
+    builder =>
+    {
+        builder.WithOrigins("*",
+            "https://localhost:7190",
+            "http://localhost:5125",
+            "https://cp-ecommerce.usos.co",
+            "https://Ecommerce.usos.co")
+               .AllowAnyMethod()
+               .AllowAnyHeader()
+               .AllowCredentials();
+    });
+});
 var isDevelopment = builder.Environment.IsDevelopment();
 if (!isDevelopment)
 {
-    //mustafa hangfire settings
-    builder.Services.AddHangfire(configuration =>
-    {
-        configuration.UseFilter(new AutomaticRetryAttribute { Attempts = 0 });
-        configuration.UseSqlServerStorage("HangfireConnectionString", new SqlServerStorageOptions
-        {
-            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
-            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
-            QueuePollInterval = TimeSpan.Zero,
-            UseRecommendedIsolationLevel = true,
-            DisableGlobalLocks = true
-        });
-    });
-
-    builder.Services.AddHangfireServer();
 }
 
 var app = builder.Build();
@@ -115,28 +90,12 @@ if (!isDevelopment)
     var userManager = serviceScope.ServiceProvider.GetService<UserManager<NewsUser>>();
     var memoryCache = serviceScope.ServiceProvider.GetService<IMemoryCache>();
     var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
-    //var recurringJobManager = serviceScope.ServiceProvider.GetService<IRecurringJobManager>();
     dbContext?.Database.Migrate();
 
     MySeedInitializer.SeedData(userManager!, roleManager!, memoryCache!);
-    //mustafa please check this
-    //var options = serviceScope.ServiceProvider.GetService<IOptions<RequestLocalizationOptions>>();
-    //app.UseRequestLocalization(options!.Value);
-
-    //if (!builder.Environment.IsDevelopment())
-    //{
-    //    recurringJobManager.RemoveIfExists("RefreshPrices");
-    //    recurringJobManager.AddOrUpdate<CurrencyRateService>("RefreshPrices", x => x.RefreshRates(), Cron.Hourly(1));
-    //}
 }
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-//Mustafa do we need this?
-//app.UseCors();
+app.UseCors();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

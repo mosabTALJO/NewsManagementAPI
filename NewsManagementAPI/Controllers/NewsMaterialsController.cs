@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NewsManagementAPI.Data;
@@ -9,7 +7,6 @@ using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
 using NewsManagementAPI.ViewModels;
-using System.Security.Claims;
 using System.Text;
 
 namespace NewsManagementAPI.Controllers
