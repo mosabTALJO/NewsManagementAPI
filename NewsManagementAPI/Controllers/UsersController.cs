@@ -23,6 +23,25 @@ namespace NewsManagementAPI.Controllers
             this.configuration = configuration;
         }
 
+        [HttpPost("Get")]
+        [Authorize(Policy = nameof(NewsUserRole.Admin))]
+        public async Task<ActionResult<ApiResponse<NewsUserVM[]>>> Get(int pageNo, int pageSize, string search, [FromBody] List<NewsUserRole> roles)
+        {
+            try
+            {
+                var q = userManager.Users;
+                if (!string.IsNullOrEmpty(search))
+                    q = q.Where(x => x.UserName == search || x.Email == search);
+                if (roles.Count > 0)
+                    q = q.Where(x => x.Roles.Any(r => roles.Contains(r.Role)));
+                return Done(await q.SkipTake(pageNo, pageSize).ToNewsUserVM().ToArrayAsync());
+            }
+            catch (Exception ex)
+            {
+                return Done<NewsUserVM[]>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
         [Authorize(Policy = nameof(NewsUserRole.Admin))]
         [HttpPost("CreateUser")]
         public async Task<ActionResult<ApiResponse<string>>> CreateUser(CreateUserVM userVM)
@@ -57,6 +76,8 @@ namespace NewsManagementAPI.Controllers
                 return Done<string>(ex.AllMessages(), ResponseCode.BadRequest);
             }
         }
+
+        //add update and delte
 
         [HttpPost("login")]
         public async Task<ActionResult<ApiResponse<TokenVM>>> Login(string email, string password)

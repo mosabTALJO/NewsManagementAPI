@@ -5,7 +5,7 @@ namespace NewsManagementAPI.ViewModels
     public class NewsMaterialVM
     {
         public int ID { get; set; }
-        public NewsUserVM? CurrentUser { get; set; }
+        public NewsUserLiteVM? CurrentUser { get; set; }
         public required string Content { get; set; }
         public NewsMaterialType Type { get; set; }
         public Priority Priority { get; set; }
