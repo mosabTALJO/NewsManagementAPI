@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using NewsManagementAPI.Data;
 using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
+using NewsManagementAPI.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
 builder.Services.AddDbContext<NewsDbContext>();
+
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 #region Authentication
 TokenValidationParameters tokenValidationParameters = new()
