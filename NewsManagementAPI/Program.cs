@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using NewsManagementAPI.Data;
+using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
 using NewsManagementAPI.Services;

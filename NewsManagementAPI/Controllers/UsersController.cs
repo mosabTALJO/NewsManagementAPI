@@ -18,12 +18,10 @@ namespace NewsManagementAPI.Controllers
     {
         readonly IMemoryCache memoryCache;
         readonly IConfiguration configuration;
-        readonly NewsDbContext newsDbContext;
-        public UsersController(UserManager<NewsUser> userManager, IMemoryCache memoryCache, IConfiguration configuration, NewsDbContext newsDbContext) : base(userManager)
+        public UsersController(UserManager<NewsUser> userManager, IMemoryCache memoryCache, IConfiguration configuration, NewsDbContext newsDbContext) : base(userManager, newsDbContext)
         {
             this.memoryCache = memoryCache;
             this.configuration = configuration;
-            this.newsDbContext = newsDbContext;
         }
 
         [HttpPost("Get")]
@@ -32,7 +30,7 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                var q = _userManager.Users;
+                var q = userManager.Users;
                 if (!string.IsNullOrEmpty(search))
                     q = q.Where(x => x.UserName == search || x.Email == search);
                 if (roles.Count > 0)
@@ -62,10 +60,10 @@ namespace NewsManagementAPI.Controllers
                     Image = userVM.Image,
                     PhoneNumber = userVM.PhoneNumber,
                 };
-                var result = await _userManager.CreateAsync(newsUser, userVM.Password);
+                var result = await userManager.CreateAsync(newsUser, userVM.Password);
                 if (result.Succeeded)
                 {
-                    await _userManager.AddClaimsAsync(newsUser, newsUser.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
+                    await userManager.AddClaimsAsync(newsUser, newsUser.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
                     //Mustafa why not like this?
                     //await userManager.AddClaimsAsync(newsUser, newsUser.Roles.Select(x => new Claim(ClaimTypes.Role, x.Role.GetPolicyNumber())));
                     memoryCache.Set(newsUser.Id, newsUser.Roles.Select(x => x.Role.GetPolicyNumber()).ToArray());
@@ -90,14 +88,14 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                var user = await _userManager.Users.FirstOrDefaultAsync(x => !string.IsNullOrEmpty(x.Email) && x.Email == email);
+                var user = await userManager.Users.FirstOrDefaultAsync(x => !string.IsNullOrEmpty(x.Email) && x.Email == email);
                 if (user == null)
                     return Done<TokenVM>("Email not found!", ResponseCode.NotFound);
 
-                if (!await _userManager.CheckPasswordAsync(user, password))
+                if (!await userManager.CheckPasswordAsync(user, password))
                     return Done<TokenVM>("Incorrect password", ResponseCode.Unauthorized);
 
-                var token = await TokenGenerator.CreateToken(user, _userManager, configuration);
+                var token = await TokenGenerator.CreateToken(user, userManager, configuration);
                 return Done(token);
             }
             catch (Exception ex)
@@ -105,5 +103,28 @@ namespace NewsManagementAPI.Controllers
                 return Done<TokenVM>(ex.AllMessages(), ResponseCode.BadRequest);
             }
         }
+
+        //[HttpPost("login2")]
+        //public async Task<ActionResult<ApiResponse<TokenVM>>> Login2([FromBody] CreateUserVM createUserVM)
+        //{
+        //    try
+        //    {
+        //        NewsUser newsUser = new()
+        //        {
+        //            DisplayName = createUserVM.DisplayName,
+        //            Email = createUserVM.Email,
+        //            PasswordHash = createUserVM.Password,
+        //            Image = createUserVM.Image,
+        //            PhoneNumber = createUserVM.PhoneNumber,
+        //            Roles = createUserVM.Roles.Select(x => new UserRole { Role = NewsUserRole.Admin }).ToList()
+        //        };
+        //        var token = await TokenGenerator.CreateToken(newsUser, userManager, configuration);
+        //        return Done(token);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return Done<TokenVM>(ex.AllMessages(), ResponseCode.BadRequest);
+        //    }
+        //}
     }
 }

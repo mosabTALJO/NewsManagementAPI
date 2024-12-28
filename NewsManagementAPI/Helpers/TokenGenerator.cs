@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Models;
 using NewsManagementAPI.ViewModels;
 using System.IdentityModel.Tokens.Jwt;

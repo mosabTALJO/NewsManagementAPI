@@ -14,34 +14,31 @@ namespace NewsManagementAPI.Controllers
 {
     public class NewsMaterialsController : MyController
     {
-        readonly NewsDbContext newsDbContext;
-        public NewsMaterialsController(NewsDbContext newsDbContext, UserManager<NewsUser> userManager) : base(userManager)
+        public NewsMaterialsController(NewsDbContext newsDbContext, UserManager<NewsUser> userManager) : base(userManager, newsDbContext)
         {
-            this.newsDbContext = newsDbContext;
         }
 
         [HttpGet]
         [Authorize]
         public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get(
-            int pageNo = 1, int pageSize = 20, bool? requiresConfirmation = null, NewsMaterialStatus[]? statuses = null, DateTime? reportDate = null)
+            int pageNo = 1, int pageSize = 20,
+            bool? requiresConfirmation = null,
+            [ModelBinder(BinderType = typeof(CommaSeparatedEnumModelBinder))] List<NewsMaterialStatus>? statuses = null,//accepts statuses=1,4,3 etc...
+            DateTime? reportDate = null)
         {
-            var userRoles = await newsDbContext.UserRoles.Where(x => x.NewsUserID == User.Identity!.Name).ToListAsync();
-
-            var newsMaterialsSql = newsDbContext.NewsMaterials.AsQueryable();
-
-            if (requiresConfirmation != null)
-                newsMaterialsSql = newsMaterialsSql.Where(x => x.ContentRequiresConfirmation == requiresConfirmation);
-            if (reportDate != null)
-                newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate == reportDate);
-            if (statuses?.Length > 0)
+            if (statuses?.Count > 0)
             {
-                foreach (var status in statuses ?? [])
+                foreach (var status in statuses)
                 {
-                    if (!userRoles.HasPemission(status))
+                    if (!User.HasPemission(status))
                         return Done<NewsMaterialVM[]>($"You don't have permission to view {status} reports!", ResponseCode.Unauthorized);
                 }
-                newsMaterialsSql = newsMaterialsSql.Where(x => statuses!.Contains(x.CurrentStatus));
             }
+
+            var newsMaterialsSql = newsDbContext.NewsMaterials
+                .Where(x => (statuses != null && statuses.Contains(x.CurrentStatus)) || (requiresConfirmation != null && x.ContentRequiresConfirmation == requiresConfirmation));
+            if (reportDate != null)
+                newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate == reportDate);
 
             var newsMaterials = await newsMaterialsSql.ToNewsMaterialVM()
                 .OrderByDescending(x => x.Urgency).ThenByDescending(x => x.Priority)

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
+using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Models;
 using NewsManagementAPI.ViewModels;
 using System.Security.Claims;
