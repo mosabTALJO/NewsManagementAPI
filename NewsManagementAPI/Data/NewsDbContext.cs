@@ -12,7 +12,7 @@ namespace NewsManagementAPI.Data
             if (Debugger.IsAttached)
                 optionsBuilder.UseNpgsql(@"Host=37.27.57.167; Port=5432; Database=Ecommerce; Username=ecomm; Password=aser@sWwer##4as");
             else
-                optionsBuilder.UseNpgsql("Server=localhost; Database=News;User ID=newsadmin;Password=asw34##455@Awe;Encrypt=False");
+                optionsBuilder.UseNpgsql(@"Host=37.27.57.167; Port=5433; Database=news; Username=newsadmin; Password=MeJU?XNKJqd_D7_4");
         }
         public DbSet<NewsMaterial> NewsMaterials { get; set; }
         public DbSet<NewsMaterialHistory> NewsMaterialHistories { get; set; }
