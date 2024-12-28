@@ -104,7 +104,8 @@ builder.Services.AddCors(options =>
             "https://localhost:7190",
             "http://localhost:5125",
             "https://cp-ecommerce.usos.co",
-            "https://Ecommerce.usos.co")
+            "https://Ecommerce.usos.co",
+            "http://localhost:5173")
                .AllowAnyMethod()
                .AllowAnyHeader()
                .AllowCredentials();
