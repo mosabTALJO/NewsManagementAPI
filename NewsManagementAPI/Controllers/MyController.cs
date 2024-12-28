@@ -9,10 +9,10 @@ namespace NewsManagementAPI.Controllers
     [ApiController]
     public class MyController : Controller
     {
-        protected readonly UserManager<NewsUser> userManager;
+        protected readonly UserManager<NewsUser> _userManager;
         public MyController(UserManager<NewsUser> userManager)
         {
-            this.userManager = userManager;
+            this._userManager = userManager;
         }
         public ActionResult<ApiResponse<T>> Done<T>(T data) => Ok(new ApiResponse<T>() { Data = data });
         public ActionResult<ApiResponse<T>> Done<T>(string error, ResponseCode code)

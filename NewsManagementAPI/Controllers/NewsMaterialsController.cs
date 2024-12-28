@@ -22,22 +22,30 @@ namespace NewsManagementAPI.Controllers
         [HttpGet]
         [Authorize]
         public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get(
-            int pageNo = 1, int pageSize = 20, bool? requiresConfirmation = null)
+            int pageNo = 1, int pageSize = 20, bool? requiresConfirmation = null, NewsMaterialStatus[]? statuses = null)
         {
-            NewsMaterialStatus[] statuses = [];
             var userRoles = await newsDbContext.UserRoles.Where(x => x.NewsUserID == User.Identity!.Name).ToListAsync();
-            foreach (var status in statuses)
+
+            var newsMaterialsSql = newsDbContext.NewsMaterials.AsQueryable();
+
+            if (requiresConfirmation != null)
+                newsMaterialsSql = newsMaterialsSql.Where(x => x.ContentRequiresConfirmation == requiresConfirmation);
+
+            if (statuses?.Length > 0)
             {
-                if (!userRoles.HasPemission(status))
-                    return Done<NewsMaterialVM[]>($"You don't have permission to view {status} reports!", ResponseCode.Unauthorized);
+                foreach (var status in statuses ?? [])
+                {
+                    if (!userRoles.HasPemission(status))
+                        return Done<NewsMaterialVM[]>($"You don't have permission to view {status} reports!", ResponseCode.Unauthorized);
+                }
+                newsMaterialsSql = newsMaterialsSql.Where(x => statuses!.Contains(x.CurrentStatus));
             }
-            var newsMaterials = await newsDbContext.NewsMaterials
-                .Where(x => statuses.Contains(x.CurrentStatus) || (requiresConfirmation != null && x.ContentRequiresConfirmation == requiresConfirmation))
+
+            var newsMaterials = await newsMaterialsSql.ToNewsMaterialVM()
+                .OrderByDescending(x => x.Urgency).ThenByDescending(x => x.Priority)
                 .SkipTake(pageNo, pageSize)
-                .OrderByDescending(x => x.Urgency)
-                .ThenByDescending(x => x.Priority)
-                .ToNewsMaterialVM()
                 .ToArrayAsync();
+
             return Done(newsMaterials);
         }
 

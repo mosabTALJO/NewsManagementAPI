@@ -29,7 +29,7 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                var q = userManager.Users;
+                var q = _userManager.Users;
                 if (!string.IsNullOrEmpty(search))
                     q = q.Where(x => x.UserName == search || x.Email == search);
                 if (roles.Count > 0)
@@ -56,10 +56,10 @@ namespace NewsManagementAPI.Controllers
                     Image = userVM.Image,
                     PhoneNumber = userVM.PhoneNumber,
                 };
-                var result = await userManager.CreateAsync(newsUser, userVM.Password);
+                var result = await _userManager.CreateAsync(newsUser, userVM.Password);
                 if (result.Succeeded)
                 {
-                    await userManager.AddClaimsAsync(newsUser, newsUser.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
+                    await _userManager.AddClaimsAsync(newsUser, newsUser.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
                     //Mustafa why not like this?
                     //await userManager.AddClaimsAsync(newsUser, newsUser.Roles.Select(x => new Claim(ClaimTypes.Role, x.Role.GetPolicyNumber())));
                     memoryCache.Set(newsUser.Id, newsUser.Roles.Select(x => x.Role.GetPolicyNumber()).ToArray());
@@ -84,14 +84,14 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                var user = await userManager.Users.FirstOrDefaultAsync(x => !string.IsNullOrEmpty(x.Email) && x.Email == email);
+                var user = await _userManager.Users.FirstOrDefaultAsync(x => !string.IsNullOrEmpty(x.Email) && x.Email == email);
                 if (user == null)
                     return Done<TokenVM>("Email not found!", ResponseCode.NotFound);
 
-                if (!await userManager.CheckPasswordAsync(user, password))
+                if (!await _userManager.CheckPasswordAsync(user, password))
                     return Done<TokenVM>("Incorrect password", ResponseCode.Unauthorized);
 
-                var token = await TokenGenerator.CreateToken(user, userManager, configuration);
+                var token = await TokenGenerator.CreateToken(user, _userManager, configuration);
                 return Done(token);
             }
             catch (Exception ex)
