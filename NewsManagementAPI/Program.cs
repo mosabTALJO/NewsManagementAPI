@@ -66,7 +66,6 @@ builder.Services.AddAuthentication(option =>
 });
 #endregion
 
-
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("cp", new OpenApiInfo { Title = "Control Panel", Version = "cp" });
@@ -91,7 +90,7 @@ builder.Services.AddSwaggerGen(c =>
                     Id="Bearer"
                 }
             },
-            new string[]{}
+            Array.Empty<string>()
         }
     });
 });
