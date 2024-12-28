@@ -7,6 +7,7 @@ using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
 using NewsManagementAPI.ViewModels;
+using System;
 using System.Text;
 
 namespace NewsManagementAPI.Controllers
@@ -22,7 +23,7 @@ namespace NewsManagementAPI.Controllers
         [HttpGet]
         [Authorize]
         public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get(
-            int pageNo = 1, int pageSize = 20, bool? requiresConfirmation = null, NewsMaterialStatus[]? statuses = null)
+            int pageNo = 1, int pageSize = 20, bool? requiresConfirmation = null, NewsMaterialStatus[]? statuses = null, DateTime? reportDate = null)
         {
             var userRoles = await newsDbContext.UserRoles.Where(x => x.NewsUserID == User.Identity!.Name).ToListAsync();
 
@@ -30,7 +31,8 @@ namespace NewsManagementAPI.Controllers
 
             if (requiresConfirmation != null)
                 newsMaterialsSql = newsMaterialsSql.Where(x => x.ContentRequiresConfirmation == requiresConfirmation);
-
+            if (reportDate != null)
+                newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate == reportDate);
             if (statuses?.Length > 0)
             {
                 foreach (var status in statuses ?? [])

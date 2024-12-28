@@ -8,6 +8,7 @@ using System.Security.Claims;
 using Microsoft.Extensions.Caching.Memory;
 using NewsManagementAPI.Extentions;
 using Microsoft.EntityFrameworkCore;
+using NewsManagementAPI.Data;
 
 namespace NewsManagementAPI.Controllers
 {
@@ -17,15 +18,17 @@ namespace NewsManagementAPI.Controllers
     {
         readonly IMemoryCache memoryCache;
         readonly IConfiguration configuration;
-        public UsersController(UserManager<NewsUser> userManager, IMemoryCache memoryCache, IConfiguration configuration) : base(userManager)
+        readonly NewsDbContext newsDbContext;
+        public UsersController(UserManager<NewsUser> userManager, IMemoryCache memoryCache, IConfiguration configuration, NewsDbContext newsDbContext) : base(userManager)
         {
             this.memoryCache = memoryCache;
             this.configuration = configuration;
+            this.newsDbContext = newsDbContext;
         }
 
         [HttpPost("Get")]
         [Authorize(Policy = nameof(NewsUserRole.Admin))]
-        public async Task<ActionResult<ApiResponse<NewsUserVM[]>>> Get(int pageNo, int pageSize, string search, [FromBody] List<NewsUserRole> roles)
+        public async Task<ActionResult<ApiResponse<NewsUserVM[]>>> Get([FromBody] List<NewsUserRole> roles, int pageNo, int pageSize, string search)
         {
             try
             {
@@ -33,7 +36,10 @@ namespace NewsManagementAPI.Controllers
                 if (!string.IsNullOrEmpty(search))
                     q = q.Where(x => x.UserName == search || x.Email == search);
                 if (roles.Count > 0)
-                    q = q.Where(x => x.Roles.Any(r => roles.Contains(r.Role)));
+                    q = from u in q
+                        from r in newsDbContext.UserRoles.Where(x => x.NewsUserID == u.Id)
+                        where roles.Contains(r.Role)
+                        select u;
                 return Done(await q.SkipTake(pageNo, pageSize).ToNewsUserVM().ToArrayAsync());
             }
             catch (Exception ex)

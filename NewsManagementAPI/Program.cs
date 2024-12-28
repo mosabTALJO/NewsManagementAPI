@@ -109,13 +109,9 @@ builder.Services.AddCors(options =>
                .AllowCredentials();
     });
 });
-var isDevelopment = builder.Environment.IsDevelopment();
-if (!isDevelopment)
-{
-}
 
 var app = builder.Build();
-if (!isDevelopment)
+if (!builder.Environment.IsDevelopment())
 {
     using var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
     var dbContext = serviceScope.ServiceProvider.GetService<NewsDbContext>();
