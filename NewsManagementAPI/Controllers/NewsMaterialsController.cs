@@ -19,7 +19,7 @@ namespace NewsManagementAPI.Controllers
             this.newsDbContext = newsDbContext;
         }
 
-        [HttpPost("Get")]
+        [HttpGet]
         [Authorize]
         public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get([FromBody] NewsMaterialStatus[] statuses,
             int pageNo, int pageSize,
