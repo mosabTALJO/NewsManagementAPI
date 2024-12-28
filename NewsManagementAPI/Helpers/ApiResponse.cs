@@ -5,7 +5,7 @@ namespace NewsManagementAPI.Helpers
     public class ApiResponse<T>
     {
         public List<string> Errors { get; set; } = [];
-        public bool IsSuccess => Errors.Count > 0;
+        public bool IsSuccess => Errors.Count == 0;
         public T? Data { get; set; }
     }
     public static class ApiResponse
