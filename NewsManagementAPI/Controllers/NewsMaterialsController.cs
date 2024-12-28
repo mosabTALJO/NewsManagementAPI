@@ -21,8 +21,10 @@ namespace NewsManagementAPI.Controllers
 
         [HttpPost("Get")]
         [Authorize]
-        public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get(int pageNo, int pageSize,
-            [FromBody] NewsMaterialStatus[] statuses, bool? requiresConfirmation = null)
+        public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get([FromBody] NewsMaterialStatus[] statuses,
+            int pageNo, int pageSize,
+            bool? requiresConfirmation = null,
+            DateTime? reportDate = null)
         {
             try
             {
@@ -34,6 +36,7 @@ namespace NewsManagementAPI.Controllers
                 }
                 var newsMaterials = await newsDbContext.NewsMaterials
                     .Where(x => statuses.Contains(x.CurrentStatus) || (requiresConfirmation != null && x.ContentRequiresConfirmation == requiresConfirmation))
+                    .Where(x => reportDate == null || x.ReportedDate == reportDate)
                     .SkipTake(pageNo, pageSize)
                     .OrderByDescending(x => x.Urgency)
                     .ThenByDescending(x => x.Priority)
