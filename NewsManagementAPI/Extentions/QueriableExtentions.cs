@@ -40,5 +40,16 @@ namespace NewsManagementAPI.Extentions
                 CurrentUser = x.CurrentUser == null ? null : new() { DisplayName = x.CurrentUser.DisplayName, Id = x.CurrentUserID! }
             });
         }
+        public static IQueryable<NewsUserVM> ToNewsUserVM(this IQueryable<NewsUser> source)
+        {
+            return source.Select(x => new NewsUserVM
+            {
+                DisplayName = x.DisplayName,
+                Email = x.Email!,
+                Image = x.Image,
+                PhoneNumber = x.PhoneNumber,
+                Roles = x.Roles.Select(x => x.Role).ToList()
+            });
+        }
     }
 }
