@@ -1,6 +1,8 @@
-﻿namespace NewsManagementAPI.Models
+﻿using Microsoft.AspNetCore.Identity;
+
+namespace NewsManagementAPI.Models
 {
-    public class UserRole
+    public class UserRole : IdentityRole
     {
         public int ID { get; set; }
         public string NewsUserID { get; set; }
