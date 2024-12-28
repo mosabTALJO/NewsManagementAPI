@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using NewsManagementAPI.Data;
 using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
@@ -65,6 +66,35 @@ builder.Services.AddAuthentication(option =>
 });
 #endregion
 
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("cp", new OpenApiInfo { Title = "Control Panel", Version = "cp" });
+    c.SwaggerDoc("fe", new OpenApiInfo { Title = "Mobile", Version = "fe" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Please enter a valid token",
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        BearerFormat = "JWT",
+        Scheme = "Bearer"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type=ReferenceType.SecurityScheme,
+                    Id="Bearer"
+                }
+            },
+            new string[]{}
+        }
+    });
+});
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(
@@ -96,6 +126,15 @@ if (!isDevelopment)
     dbContext?.Database.Migrate();
 
     MySeedInitializer.SeedData(userManager!, roleManager!, memoryCache!);
+}
+
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/cp/swagger.json", "Control Panel");
+        c.SwaggerEndpoint("/swagger/fe/swagger.json", "Mobile");
+    });
 }
 
 app.UseCors();
