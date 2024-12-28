@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using NewsManagementAPI.Data;
 using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
+using NewsManagementAPI.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
 builder.Services.AddDbContext<NewsDbContext>();
+
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 #region Authentication
 TokenValidationParameters tokenValidationParameters = new()
@@ -63,7 +66,6 @@ builder.Services.AddAuthentication(option =>
 });
 #endregion
 
-
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("cp", new OpenApiInfo { Title = "Control Panel", Version = "cp" });
@@ -88,7 +90,7 @@ builder.Services.AddSwaggerGen(c =>
                     Id="Bearer"
                 }
             },
-            new string[]{}
+            Array.Empty<string>()
         }
     });
 });
