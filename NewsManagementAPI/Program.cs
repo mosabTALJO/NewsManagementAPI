@@ -113,22 +113,18 @@ try
     });
 
     var app = builder.Build();
-    if (app.Environment.IsDevelopment())
+    using (var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope())
     {
-        using var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
         var userManager = serviceScope.ServiceProvider.GetService<UserManager<NewsUser>>();
         var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
-        await MySeedInitializer.SeedData("mosabtaljo@gmail.com", "mosab", "123456lolo", userManager!, roleManager!);
-    }
-    else
-    {
-        using var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
-        var dbContext = serviceScope.ServiceProvider.GetService<NewsDbContext>();
-        var userManager = serviceScope.ServiceProvider.GetService<UserManager<NewsUser>>();
-        var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
-        dbContext?.Database.Migrate();
-
-        await MySeedInitializer.SeedData("admin@ecommerce.com", "adminecommerce", "P@ssw0rd", userManager!, roleManager!);
+        if (app.Environment.IsDevelopment())
+            await MySeedInitializer.SeedData("mosabtaljo@gmail.com", "mosab", "123456lolo", userManager!, roleManager!);
+        else
+        {
+            var dbContext = serviceScope.ServiceProvider.GetService<NewsDbContext>();
+            dbContext?.Database.Migrate();
+            await MySeedInitializer.SeedData("admin@ecommerce.com", "adminecommerce", "P@ssw0rd", userManager!, roleManager!);
+        }
     }
 
     app.UseSwagger();
