@@ -3,7 +3,7 @@ using NewsManagementAPI.Models;
 
 namespace NewsManagementAPI.Helpers
 {
-    public class CommaSeparatedEnumModelBinder : IModelBinder
+    public class CommaSeparatedEnumModelBinder<T> : IModelBinder where T : Enum
     {
         public Task BindModelAsync(ModelBindingContext bindingContext)
         {
@@ -19,7 +19,7 @@ namespace NewsManagementAPI.Helpers
 
             if (elements.All(e => int.TryParse(e, out _)))
             {
-                var intList = elements.Select(x => Enum.Parse(typeof(NewsMaterialStatus), x)).Cast<NewsMaterialStatus>().ToList();
+                var intList = elements.Select(x => Enum.Parse(typeof(T), x)).Cast<T>().ToList();
                 bindingContext.Result = ModelBindingResult.Success(intList);
             }
             else

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using NewsManagementAPI.Data;
@@ -12,133 +13,145 @@ using NewsManagementAPI.Models;
 using NewsManagementAPI.Services;
 using System.Text;
 
-var builder = WebApplication.CreateBuilder(args);
-
-
-builder.Services.AddControllers();
-builder.Services.AddMemoryCache();
-builder.Services.AddDbContext<NewsDbContext>();
-
-builder.Services.AddScoped<INotificationService, NotificationService>();
-
-#region Authentication
-TokenValidationParameters tokenValidationParameters = new()
+try
 {
-    ValidateIssuer = true,
-    ValidateAudience = true,
-    ValidateLifetime = true,
-    ValidateIssuerSigningKey = true,
-    ValidAudience = builder.Configuration["Jwt:Site"],
-    ValidIssuer = builder.Configuration["Jwt:Site"],
-    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SigningKey"]!))
-};
+    var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddIdentity<NewsUser, IdentityRole>(options =>
-{
-    options.Password.RequiredLength = 6;
-    options.Password.RequireDigit = false;
-    options.Password.RequireLowercase = false;
-    options.Password.RequireUppercase = false;
-    options.Password.RequireNonAlphanumeric = false;
-})
-   .AddEntityFrameworkStores<NewsDbContext>()
-   .AddDefaultTokenProviders();
+    builder.Services.AddControllers();
+    //builder.Services.AddDbContext<NewsDbContext>(x => x.UseNpgsql(@"Host=localhost; Port=5432; Database=news; Username=postgres; Password=123456lolo"));
+    NewsDbContext.isDevelopment = builder.Environment.IsDevelopment();
+    builder.Services.AddDbContext<NewsDbContext>();
 
-builder.Services.Configure<DataProtectionTokenProviderOptions>(opt => opt.TokenLifespan = TimeSpan.FromHours(2));
+    builder.Services.AddScoped<INotificationService, NotificationService>();
 
-builder.Services.AddAuthorization(option =>
-{
-    foreach (var r in Enum.GetValues<NewsUserRole>())
-        option.AddPolicy(r.GetPolicyNumber(), policy => policy.AddRequirements(new AdminHasAccessRequirement(r.GetPolicyNumber())));
-});
-builder.Services.AddScoped<IAuthorizationHandler, AdminHasAccessHandler>();
-
-builder.Services.AddAuthentication(option =>
-{
-    option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    option.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.SaveToken = true;
-    options.RequireHttpsMetadata = false;
-    options.TokenValidationParameters = tokenValidationParameters;
-});
-#endregion
-
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("cp", new OpenApiInfo { Title = "Control Panel", Version = "cp" });
-    c.SwaggerDoc("fe", new OpenApiInfo { Title = "Mobile", Version = "fe" });
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    #region Authentication
+    TokenValidationParameters tokenValidationParameters = new()
     {
-        In = ParameterLocation.Header,
-        Description = "Please enter a valid token",
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        BearerFormat = "JWT",
-        Scheme = "Bearer"
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidAudience = builder.Configuration["Jwt:Site"],
+        ValidIssuer = builder.Configuration["Jwt:Site"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SigningKey"]!))
+    };
+
+    builder.Services.AddIdentity<NewsUser, IdentityRole>(options =>
+    {
+        options.Password.RequiredLength = 6;
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+    })
+       .AddEntityFrameworkStores<NewsDbContext>()
+       .AddDefaultTokenProviders();
+
+    builder.Services.Configure<DataProtectionTokenProviderOptions>(opt => opt.TokenLifespan = TimeSpan.FromHours(2));
+
+    builder.Services.AddAuthorization(option =>
+    {
+        foreach (var r in Enum.GetValues<NewsUserRole>())
+            option.AddPolicy(r.GetPolicyNumber(), policy => policy.AddRequirements(new AdminHasAccessRequirement(r.GetPolicyNumber())));
     });
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    builder.Services.AddScoped<IAuthorizationHandler, AdminHasAccessHandler>();
+
+    builder.Services.AddAuthentication(option =>
     {
+        option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        option.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.SaveToken = true;
+        options.RequireHttpsMetadata = false;
+        options.TokenValidationParameters = tokenValidationParameters;
+    });
+    #endregion
+
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(c =>
+    {
+        //c.SwaggerDoc("cp", new OpenApiInfo { Title = "Control Panel", Version = "cp" });
+        //c.SwaggerDoc("fe", new OpenApiInfo { Title = "Mobile", Version = "fe" });
+        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
-            new OpenApiSecurityScheme
+            In = ParameterLocation.Header,
+            Description = "Please enter a valid token",
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            BearerFormat = "JWT",
+            Scheme = "Bearer"
+        });
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
             {
-                Reference = new OpenApiReference
+                new OpenApiSecurityScheme
                 {
-                    Type=ReferenceType.SecurityScheme,
-                    Id="Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+                    Reference = new OpenApiReference
+                    {
+                        Type=ReferenceType.SecurityScheme,
+                        Id="Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
     });
-});
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(
-    builder =>
+    builder.Services.AddCors(options =>
     {
-        builder.WithOrigins("*",
-            "https://localhost:7190",
-            "http://localhost:5125",
-            "https://cp-ecommerce.usos.co",
-            "https://Ecommerce.usos.co",
-            "http://localhost:5173")
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .AllowCredentials();
+        options.AddDefaultPolicy(
+        builder =>
+        {
+            builder.WithOrigins("*",
+                "https://localhost:7190",
+                "http://localhost:5125",
+                "https://cp-ecommerce.usos.co",
+                "https://Ecommerce.usos.co",
+                "http://localhost:5173")
+                   .AllowAnyMethod()
+                   .AllowAnyHeader()
+                   .AllowCredentials();
+        });
     });
-});
 
-var app = builder.Build();
-if (!builder.Environment.IsDevelopment())
-{
-    using var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
-    var dbContext = serviceScope.ServiceProvider.GetService<NewsDbContext>();
-    var userManager = serviceScope.ServiceProvider.GetService<UserManager<NewsUser>>();
-    var memoryCache = serviceScope.ServiceProvider.GetService<IMemoryCache>();
-    var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
-    dbContext?.Database.Migrate();
-
-    MySeedInitializer.SeedData(userManager!, roleManager!, memoryCache!);
-}
-
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    var app = builder.Build();
+    if (app.Environment.IsDevelopment())
     {
-        c.SwaggerEndpoint("/swagger/cp/swagger.json", "Control Panel");
-        c.SwaggerEndpoint("/swagger/fe/swagger.json", "Mobile");
-    });
+        app.UseSwagger();
+        app.UseSwaggerUI();
+        //app.UseSwaggerUI(c =>
+        //{
+        //    c.SwaggerEndpoint("/swagger/cp/swagger.json", "Control Panel");
+        //    c.SwaggerEndpoint("/swagger/fe/swagger.json", "Mobile");
+        //});
+        using var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+        var userManager = serviceScope.ServiceProvider.GetService<UserManager<NewsUser>>();
+        var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
+        await MySeedInitializer.SeedDevData(userManager!, roleManager!);
+    }
+    else
+    {
+        using var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+        var dbContext = serviceScope.ServiceProvider.GetService<NewsDbContext>();
+        var userManager = serviceScope.ServiceProvider.GetService<UserManager<NewsUser>>();
+        var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
+        dbContext?.Database.Migrate();
+
+        MySeedInitializer.SeedData(userManager!, roleManager!);
+    }
+
+    app.UseCors();
+    app.UseHttpsRedirection();
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.UseMiddleware<ErrorHandlerMiddleware>();
+    app.MapControllers();
+
+    app.Run();
 }
-
-app.UseCors();
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseMiddleware<ErrorHandlerMiddleware>();
-app.MapControllers();
-
-app.Run();
+catch (Exception ex)
+{
+    Console.WriteLine(ex.AllMessages());
+}

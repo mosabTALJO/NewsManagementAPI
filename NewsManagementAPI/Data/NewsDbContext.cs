@@ -1,16 +1,21 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Models;
 using System.Diagnostics;
+using System.Security.Claims;
 
 namespace NewsManagementAPI.Data
 {
     public class NewsDbContext : IdentityDbContext<NewsUser>
     {
+        public static bool isDevelopment = true;
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            if (Debugger.IsAttached)
-                optionsBuilder.UseNpgsql(@"Host=37.27.57.167; Port=5432; Database=news; Username=newsadmin; Password=aser@sWwer##4as");
+            if (Debugger.IsAttached || isDevelopment)
+                optionsBuilder.UseNpgsql(@"Host=localhost; Port=5432; Database=news; Username=postgres; Password=123456lolo");
             else
                 optionsBuilder.UseNpgsql(@"Host=37.27.57.167; Port=5433; Database=news; Username=newsadmin; Password=MeJU?XNKJqd_D7_4");
         }
