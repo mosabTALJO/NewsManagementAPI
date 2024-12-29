@@ -10,18 +10,17 @@ namespace NewsManagementAPI.Helpers
 {
     public class MySeedInitializer
     {
-        public static void SeedData(UserManager<NewsUser> userManager, RoleManager<IdentityRole> roleManager)
-        {
-            SeedRoles(roleManager).Wait();
-            SeedUsers(userManager).Wait();
-        }
-        public static async Task SeedDevData(UserManager<NewsUser> userManager, RoleManager<IdentityRole> roleManager)
+        public static async Task SeedData(string email, string username, string password, UserManager<NewsUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             await SeedRoles(roleManager);
-            var newsUser = await userManager.Users.Include(x => x.Roles).FirstOrDefaultAsync(x => x.Email == "mosabtaljo@gmail.com");
+            await SeedUsers(userManager, email, username, password);
+        }
+        private static async Task SeedUsers(UserManager<NewsUser> userManager, string email, string username, string password)
+        {
+            var newsUser = await userManager.Users.Include(x => x.Roles).FirstOrDefaultAsync(x => x.Email == email);
             if (newsUser == null)
             {
-                var result = await UserHelper.CreateUser("mosabtaljo@gmail.com", "mosab", "123456lolo", userManager);
+                var result = await UserHelper.CreateUser(email, username, password, userManager);
                 //Remove currenct policies
                 if (result.User != null)
                 {
@@ -29,18 +28,11 @@ namespace NewsManagementAPI.Helpers
                     await userManager.AddClaimsAsync(result.User, result.User.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
                 }
             }
-        }
-        private static async Task SeedUsers(UserManager<NewsUser> userManager)
-        {
-            if (await userManager.Users.AnyAsync(x => x.Email == "admin@ecommerce.com") == false)
+            else if (newsUser.Roles.Any(x => x.Role == NewsUserRole.Admin) == false)
             {
-                var result = await UserHelper.CreateUser("admin@ecommerce.com", "adminecommerce", "P@ssw0rd", userManager);
-                //Remove currenct policies
-                if (result.User != null)
-                {
-                    await userManager.RemoveClaimsAsync(result.User, await userManager.GetClaimsAsync(result.User));
-                    await userManager.AddClaimsAsync(result.User, result.User.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
-                }
+                newsUser.Roles.Add(new() { Role = NewsUserRole.Admin });
+                await userManager.RemoveClaimsAsync(newsUser, await userManager.GetClaimsAsync(newsUser));
+                await userManager.AddClaimsAsync(newsUser, newsUser.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
             }
         }
         private static async Task SeedRoles(RoleManager<IdentityRole> roleManager)

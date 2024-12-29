@@ -118,7 +118,7 @@ try
         using var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
         var userManager = serviceScope.ServiceProvider.GetService<UserManager<NewsUser>>();
         var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
-        await MySeedInitializer.SeedDevData(userManager!, roleManager!);
+        await MySeedInitializer.SeedData("mosabtaljo@gmail.com", "mosab", "123456lolo", userManager!, roleManager!);
     }
     else
     {
@@ -128,7 +128,7 @@ try
         var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
         dbContext?.Database.Migrate();
 
-        MySeedInitializer.SeedData(userManager!, roleManager!);
+        await MySeedInitializer.SeedData("admin@ecommerce.com", "adminecommerce", "P@ssw0rd", userManager!, roleManager!);
     }
 
     app.UseSwagger();
