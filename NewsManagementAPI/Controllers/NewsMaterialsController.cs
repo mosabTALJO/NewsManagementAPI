@@ -6,6 +6,7 @@ using NewsManagementAPI.Data;
 using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
+using NewsManagementAPI.Services;
 using NewsManagementAPI.ViewModels;
 using System;
 using System.Text;
@@ -14,8 +15,10 @@ namespace NewsManagementAPI.Controllers
 {
     public class NewsMaterialsController : MyController
     {
-        public NewsMaterialsController(NewsDbContext newsDbContext, UserManager<NewsUser> userManager) : base(userManager, newsDbContext)
+        readonly INotificationService notificationService;
+        public NewsMaterialsController(NewsDbContext newsDbContext, UserManager<NewsUser> userManager, INotificationService notificationService) : base(userManager, newsDbContext)
         {
+            this.notificationService = notificationService;
         }
 
         [HttpGet]
@@ -93,7 +96,19 @@ namespace NewsManagementAPI.Controllers
                 };
                 if (newsMaterial.ExtremelyUrgent)
                 {
-                    //todo send notification to Reviewer
+                    var reviewerIds = await newsDbContext.UserRoles
+                        .Where(x => x.Role == NewsUserRole.Reviewer)
+                        .Select(x => x.NewsUserID)
+                        .ToArrayAsync();
+                    foreach (var reviewerId in reviewerIds)
+                    {
+                        await notificationService.AddNotification(new()
+                        {
+                            UserId = reviewerId,
+                            Title = "Extremely Urgent",
+                            Text = $"A new extremely urgent news material has been reported.",
+                        });
+                    }
                 }
                 await newsDbContext.NewsMaterials.AddAsync(newsMaterial);
                 await newsDbContext.SaveChangesAsync();
