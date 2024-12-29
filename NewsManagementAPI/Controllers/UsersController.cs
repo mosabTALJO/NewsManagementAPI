@@ -12,30 +12,30 @@ using NewsManagementAPI.Data;
 
 namespace NewsManagementAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
     public class UsersController : MyController
     {
-        readonly IMemoryCache memoryCache;
         readonly IConfiguration configuration;
-        readonly NewsDbContext newsDbContext;
-        public UsersController(UserManager<NewsUser> userManager, IMemoryCache memoryCache, IConfiguration configuration, NewsDbContext newsDbContext) : base(userManager)
+        public UsersController(UserManager<NewsUser> userManager, IConfiguration configuration, NewsDbContext newsDbContext) : base(userManager, newsDbContext)
         {
-            this.memoryCache = memoryCache;
             this.configuration = configuration;
-            this.newsDbContext = newsDbContext;
         }
 
-        [HttpPost("Get")]
-        [Authorize(Policy = nameof(NewsUserRole.Admin))]
-        public async Task<ActionResult<ApiResponse<NewsUserVM[]>>> Get([FromBody] List<NewsUserRole> roles, int pageNo, int pageSize, string search)
+        [HttpGet]
+        [Authorize(Policy = UserRoleNames.Admin)]
+        public async Task<ActionResult<ApiResponse<NewsUserVM[]>>> Get(
+            int pageNo = 1, 
+            int pageSize = 20, 
+            string? search = null,
+            [ModelBinder(BinderType = typeof(CommaSeparatedEnumModelBinder<NewsUserRole>))] List<NewsUserRole>? roles = null)//accepts statuses=1,4,3 etc...
         {
             try
             {
-                var q = _userManager.Users;
+                var qwe = User;
+                var iden = User.Identity;
+                var q = userManager.Users;
                 if (!string.IsNullOrEmpty(search))
                     q = q.Where(x => x.UserName == search || x.Email == search);
-                if (roles.Count > 0)
+                if (roles?.Count > 0)
                     q = from u in q
                         from r in newsDbContext.UserRoles.Where(x => x.NewsUserID == u.Id)
                         where roles.Contains(r.Role)
@@ -48,34 +48,17 @@ namespace NewsManagementAPI.Controllers
             }
         }
 
-        [Authorize(Policy = nameof(NewsUserRole.Admin))]
+        [Authorize(Policy = UserRoleNames.Admin)]
         [HttpPost("CreateUser")]
         public async Task<ActionResult<ApiResponse<string>>> CreateUser(CreateUserVM userVM)
         {
             try
             {
-                NewsUser newsUser = new()
-                {
-                    DisplayName = userVM.DisplayName,
-                    Roles = userVM.Roles.Select(x => new UserRole { Role = x }).ToList(),
-                    Email = userVM.Email,
-                    Image = userVM.Image,
-                    PhoneNumber = userVM.PhoneNumber,
-                };
-                var result = await _userManager.CreateAsync(newsUser, userVM.Password);
-                if (result.Succeeded)
-                {
-                    await _userManager.AddClaimsAsync(newsUser, newsUser.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
-                    //Mustafa why not like this?
-                    //await userManager.AddClaimsAsync(newsUser, newsUser.Roles.Select(x => new Claim(ClaimTypes.Role, x.Role.GetPolicyNumber())));
-                    memoryCache.Set(newsUser.Id, newsUser.Roles.Select(x => x.Role.GetPolicyNumber()).ToArray());
-                    return Done(newsUser.Id);
-                }
+                var result = await UserHelper.CreateUser(userVM, userManager);
+                if (result.User != null)
+                    return Done(result.User.Id);
                 else
-                {
-                    string error = string.Join('\n', result.Errors.Select(x => x.Code + ": " + x.Description));
-                    return Done<string>(error, ResponseCode.BadRequest);
-                }
+                    return Done<string>(result.Error ?? "Error creating user!", ResponseCode.BadRequest);
             }
             catch (Exception ex)
             {
@@ -90,14 +73,14 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                var user = await _userManager.Users.FirstOrDefaultAsync(x => !string.IsNullOrEmpty(x.Email) && x.Email == email);
+                var user = await userManager.Users.FirstOrDefaultAsync(x => !string.IsNullOrEmpty(x.Email) && x.Email == email);
                 if (user == null)
                     return Done<TokenVM>("Email not found!", ResponseCode.NotFound);
 
-                if (!await _userManager.CheckPasswordAsync(user, password))
+                if (!await userManager.CheckPasswordAsync(user, password))
                     return Done<TokenVM>("Incorrect password", ResponseCode.Unauthorized);
 
-                var token = await TokenGenerator.CreateToken(user, _userManager, configuration);
+                var token = await TokenGenerator.CreateToken(user, userManager, configuration);
                 return Done(token);
             }
             catch (Exception ex)
@@ -105,5 +88,28 @@ namespace NewsManagementAPI.Controllers
                 return Done<TokenVM>(ex.AllMessages(), ResponseCode.BadRequest);
             }
         }
+
+        //[HttpPost("login2")]
+        //public async Task<ActionResult<ApiResponse<TokenVM>>> Login2([FromBody] CreateUserVM createUserVM)
+        //{
+        //    try
+        //    {
+        //        NewsUser newsUser = new()
+        //        {
+        //            DisplayName = createUserVM.DisplayName,
+        //            Email = createUserVM.Email,
+        //            PasswordHash = createUserVM.Password,
+        //            Image = createUserVM.Image,
+        //            PhoneNumber = createUserVM.PhoneNumber,
+        //            Roles = createUserVM.Roles.Select(x => new UserRole { Role = NewsUserRole.Admin }).ToList()
+        //        };
+        //        var token = await TokenGenerator.CreateToken(newsUser, userManager, configuration);
+        //        return Done(token);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return Done<TokenVM>(ex.AllMessages(), ResponseCode.BadRequest);
+        //    }
+        //}
     }
 }

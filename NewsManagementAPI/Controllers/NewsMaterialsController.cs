@@ -14,34 +14,31 @@ namespace NewsManagementAPI.Controllers
 {
     public class NewsMaterialsController : MyController
     {
-        readonly NewsDbContext newsDbContext;
-        public NewsMaterialsController(NewsDbContext newsDbContext, UserManager<NewsUser> userManager) : base(userManager)
+        public NewsMaterialsController(NewsDbContext newsDbContext, UserManager<NewsUser> userManager) : base(userManager, newsDbContext)
         {
-            this.newsDbContext = newsDbContext;
         }
 
         [HttpGet]
         [Authorize]
         public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get(
-            int pageNo = 1, int pageSize = 20, bool? requiresConfirmation = null, NewsMaterialStatus[]? statuses = null, DateTime? reportDate = null)
+            int pageNo = 1, int pageSize = 20,
+            bool? requiresConfirmation = null,
+            [ModelBinder(BinderType = typeof(CommaSeparatedEnumModelBinder<NewsMaterialStatus>))] List<NewsMaterialStatus>? statuses = null,//accepts statuses=1,4,3 etc...
+            DateTime? reportDate = null)
         {
-
-            var newsMaterialsSql = newsDbContext.NewsMaterials.AsQueryable();
-
-            if (requiresConfirmation != null)
-                newsMaterialsSql = newsMaterialsSql.Where(x => x.ContentRequiresConfirmation == requiresConfirmation);
-            if (reportDate != null)
-                newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate == reportDate);
-            if (statuses?.Length > 0)
+            if (statuses?.Count > 0)
             {
-                var userRoles = await newsDbContext.UserRoles.Where(x => x.NewsUserID == User.Identity!.Name).ToListAsync();
-                foreach (var status in statuses ?? [])
+                foreach (var status in statuses)
                 {
-                    if (!userRoles.HasPemission(status))
+                    if (!User.HasPemission(status))
                         return Done<NewsMaterialVM[]>($"You don't have permission to view {status} reports!", ResponseCode.Unauthorized);
                 }
-                newsMaterialsSql = newsMaterialsSql.Where(x => statuses!.Contains(x.CurrentStatus));
             }
+
+            var newsMaterialsSql = newsDbContext.NewsMaterials
+                .Where(x => (statuses != null && statuses.Contains(x.CurrentStatus)) || (requiresConfirmation != null && x.ContentRequiresConfirmation == requiresConfirmation));
+            if (reportDate != null)
+                newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate == reportDate);
 
             var newsMaterials = await newsMaterialsSql.ToNewsMaterialVM()
                 .OrderByDescending(x => x.Urgency).ThenByDescending(x => x.Priority)
@@ -71,7 +68,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPost("ReportNews")]
-        [Authorize(Policy = nameof(NewsUserRole.Reporter))]
+        [Authorize(Policy = UserRoleNames.Reporter)]
         public async Task<ActionResult<ApiResponse<int>>> ReportNews([FromBody] ReportedNewsVM reportedNews)
         {
             try
@@ -109,7 +106,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("BeingReview")]
-        [Authorize(Policy = nameof(NewsUserRole.Reviewer))]
+        [Authorize(Policy = UserRoleNames.Reviewer)]
         public async Task<ActionResult<ApiResponse<bool>>> BeingReview(int newsMaterialId)
         {
             try
@@ -131,7 +128,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("EndReview")]
-        [Authorize(Policy = nameof(NewsUserRole.Reviewer))]
+        [Authorize(Policy = UserRoleNames.Reviewer)]
         public async Task<ActionResult<ApiResponse<bool>>> EndReview([FromBody] NewsMaterialReviewedVM reviewedVM)
         {
             try
@@ -179,7 +176,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("AssignEdit")]
-        [Authorize(Policy = nameof(NewsUserRole.EditingManager))]
+        [Authorize(Policy = UserRoleNames.EditingManager)]
         public async Task<ActionResult<ApiResponse<bool>>> AssignEdit(int newsMaterialId, string editorId)
         {
             try
@@ -201,7 +198,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("BeginEdit")]
-        [Authorize(Policy = nameof(NewsUserRole.Editor))]
+        [Authorize(Policy = UserRoleNames.Editor)]
         public async Task<ActionResult<ApiResponse<bool>>> BeginEdit(int newsMaterialId)
         {
             try
@@ -232,7 +229,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("EndEdit")]
-        [Authorize(Policy = nameof(NewsUserRole.Editor))]
+        [Authorize(Policy = UserRoleNames.Editor)]
         public async Task<ActionResult<ApiResponse<bool>>> EndEdit([FromBody] NewsMaterialEditedVM editedVM)
         {
             try
@@ -277,7 +274,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("AssignProofread")]
-        [Authorize(Policy = nameof(NewsUserRole.ProofreadingManager))]
+        [Authorize(Policy = UserRoleNames.ProofreadingManager)]
         public async Task<ActionResult<ApiResponse<bool>>> AssignProofread(int newsMaterialId, string proofreaderId)
         {
             try
@@ -299,7 +296,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("BeginProofread")]
-        [Authorize(Policy = nameof(NewsUserRole.Proofreader))]
+        [Authorize(Policy = UserRoleNames.Proofreader)]
         public async Task<ActionResult<ApiResponse<bool>>> BeginProofread(int newsMaterialId)
         {
             try
@@ -328,7 +325,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("EndProofread")]
-        [Authorize(Policy = nameof(NewsUserRole.Proofreader))]
+        [Authorize(Policy = UserRoleNames.Proofreader)]
         public async Task<ActionResult<ApiResponse<bool>>> EndProofread([FromBody] NewsMaterialProofreadedVM proofreadedVM)
         {
             try
@@ -361,7 +358,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("AssignDesign")]
-        [Authorize(Policy = nameof(NewsUserRole.EditingManager))]
+        [Authorize(Policy = UserRoleNames.DesigningManager)]
         public async Task<ActionResult<ApiResponse<bool>>> AssignDesign(int newsMaterialId, string designerId)
         {
             try
@@ -383,7 +380,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("BeginDesign")]
-        [Authorize(Policy = nameof(NewsUserRole.Editor))]
+        [Authorize(Policy = UserRoleNames.Designer)]
         public async Task<ActionResult<ApiResponse<bool>>> BeginDesign(int newsMaterialId)
         {
             try
@@ -414,7 +411,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("EndDesign")]
-        [Authorize(Policy = nameof(NewsUserRole.Editor))]
+        [Authorize(Policy = UserRoleNames.Designer)]
         public async Task<ActionResult<ApiResponse<bool>>> EndDesign([FromBody] NewsMaterialDesignedVM designedVM)
         {
             try
@@ -451,7 +448,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("Publish")]
-        [Authorize(Policy = nameof(NewsUserRole.Publisher))]
+        [Authorize(Policy = UserRoleNames.Publisher)]
         public async Task<ActionResult<ApiResponse<bool>>> Publish([FromBody] NewsMaterialPublishedVM publishedVM)
         {
             try
@@ -478,7 +475,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpPut("ConfirmContent")]
-        [Authorize(Policy = nameof(NewsUserRole.Publisher))]
+        [Authorize(Policy = UserRoleNames.Publisher)]
         public async Task<ActionResult<ApiResponse<bool>>> ConfirmContent(int materialId, bool confirmed, string? note = null)
         {
             try

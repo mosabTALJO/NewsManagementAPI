@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel;
 
 namespace NewsManagementAPI.Models
 {
@@ -21,5 +22,19 @@ namespace NewsManagementAPI.Models
         DesigningManager = 8,
         Publisher = 9,
         PublishingManager = 10,
+    }
+    public static class UserRoleNames
+    {
+        public const string Admin = "0";
+        public const string Reporter = "1";
+        public const string Reviewer = "2";
+        public const string Editor = "3";
+        public const string EditingManager = "4";
+        public const string Proofreader = "5";
+        public const string ProofreadingManager = "6";
+        public const string Designer = "7";
+        public const string DesigningManager = "8";
+        public const string Publisher = "9";
+        public const string PublishingManager = "10";
     }
 }

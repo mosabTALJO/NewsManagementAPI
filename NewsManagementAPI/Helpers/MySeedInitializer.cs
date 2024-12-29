@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Models;
 using NewsManagementAPI.ViewModels;
 using System.Security.Claims;
@@ -8,34 +10,38 @@ namespace NewsManagementAPI.Helpers
 {
     public class MySeedInitializer
     {
-        public static void SeedData(UserManager<NewsUser> userManager,
-            RoleManager<IdentityRole> roleManager,
-            IMemoryCache memoryCache
-            )
+        public static void SeedData(UserManager<NewsUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             SeedRoles(roleManager).Wait();
             SeedUsers(userManager).Wait();
-            RefreshMemoryCache(userManager, memoryCache).Wait();
         }
-
+        public static async Task SeedDevData(UserManager<NewsUser> userManager, RoleManager<IdentityRole> roleManager)
+        {
+            await SeedRoles(roleManager);
+            var newsUser = await userManager.Users.Include(x => x.Roles).FirstOrDefaultAsync(x => x.Email == "mosabtaljo@gmail.com");
+            if (newsUser == null)
+            {
+                var result = await UserHelper.CreateUser("mosabtaljo@gmail.com", "mosab", "123456lolo", userManager);
+                //Remove currenct policies
+                if (result.User != null)
+                {
+                    await userManager.RemoveClaimsAsync(result.User, await userManager.GetClaimsAsync(result.User));
+                    await userManager.AddClaimsAsync(result.User, result.User.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
+                }
+            }
+        }
         private static async Task SeedUsers(UserManager<NewsUser> userManager)
         {
-            var user = userManager.Users.FirstOrDefault(x => x.Email == "admin@ecommerce.com");
-            if (user is null)
+            if (await userManager.Users.AnyAsync(x => x.Email == "admin@ecommerce.com") == false)
             {
-                user = new NewsUser
+                var result = await UserHelper.CreateUser("admin@ecommerce.com", "adminecommerce", "P@ssw0rd", userManager);
+                //Remove currenct policies
+                if (result.User != null)
                 {
-                    UserName = "adminecommerce",
-                    DisplayName = "Admin",
-                    Email = "admin@ecommerce.com",
-                    SecurityStamp = Guid.NewGuid().ToString(),
-                    Roles = [new() { Role = NewsUserRole.Admin }]
-                };
-                await userManager.CreateAsync(user, "P@ssw0rd");
+                    await userManager.RemoveClaimsAsync(result.User, await userManager.GetClaimsAsync(result.User));
+                    await userManager.AddClaimsAsync(result.User, result.User.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
+                }
             }
-            //Remove currenct policies
-            await userManager.RemoveClaimsAsync(user, await userManager.GetClaimsAsync(user));
-            await userManager.AddClaimsAsync(user, user.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
         }
         private static async Task SeedRoles(RoleManager<IdentityRole> roleManager)
         {
@@ -44,16 +50,6 @@ namespace NewsManagementAPI.Helpers
             {
                 if (!await roleManager.RoleExistsAsync(role.ToString()))
                     await roleManager.CreateAsync(new IdentityRole(role.ToString()));
-            }
-        }
-        private static async Task RefreshMemoryCache(UserManager<NewsUser> userManager, IMemoryCache memoryCache)
-        {
-            var us = userManager.Users.ToList();
-            foreach (var u in us)
-            {
-                var cs = await userManager.GetClaimsAsync(u);
-                memoryCache.Remove(u.Id);
-                memoryCache.Set(u.Id, cs.Select(e => e.Type).ToArray());
             }
         }
     }

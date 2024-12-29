@@ -418,6 +418,42 @@ namespace NewsManagementAPI.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("NewsManagementAPI.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Image")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ScheduledDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Topic")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("NewsManagementAPI.Models.SocialMedia", b =>
                 {
                     b.Property<int>("ID")
@@ -438,9 +474,6 @@ namespace NewsManagementAPI.Migrations
             modelBuilder.Entity("NewsManagementAPI.Models.UserRole", b =>
                 {
                     b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityRole");
-
-                    b.Property<int>("ID")
-                        .HasColumnType("integer");
 
                     b.Property<string>("NewsUserID")
                         .IsRequired()
@@ -586,6 +619,15 @@ namespace NewsManagementAPI.Migrations
                     b.Navigation("NewsMaterial");
 
                     b.Navigation("SocialMedia");
+                });
+
+            modelBuilder.Entity("NewsManagementAPI.Models.Notification", b =>
+                {
+                    b.HasOne("NewsManagementAPI.Models.NewsUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.UserRole", b =>
