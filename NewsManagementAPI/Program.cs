@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using NewsManagementAPI.Data;
@@ -73,8 +71,6 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
     {
-        //c.SwaggerDoc("cp", new OpenApiInfo { Title = "Control Panel", Version = "cp" });
-        //c.SwaggerDoc("fe", new OpenApiInfo { Title = "Mobile", Version = "fe" });
         c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
             In = ParameterLocation.Header,
@@ -119,13 +115,6 @@ try
     var app = builder.Build();
     if (app.Environment.IsDevelopment())
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-        //app.UseSwaggerUI(c =>
-        //{
-        //    c.SwaggerEndpoint("/swagger/cp/swagger.json", "Control Panel");
-        //    c.SwaggerEndpoint("/swagger/fe/swagger.json", "Mobile");
-        //});
         using var serviceScope = app.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
         var userManager = serviceScope.ServiceProvider.GetService<UserManager<NewsUser>>();
         var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
@@ -142,6 +131,8 @@ try
         MySeedInitializer.SeedData(userManager!, roleManager!);
     }
 
+    app.UseSwagger();
+    app.UseSwaggerUI();
     app.UseCors();
     app.UseHttpsRedirection();
     app.UseAuthentication();
