@@ -25,7 +25,6 @@ namespace NewsManagementAPI.Controllers
         public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get(
             int pageNo = 1, int pageSize = 20, bool? requiresConfirmation = null, NewsMaterialStatus[]? statuses = null, DateTime? reportDate = null)
         {
-            var userRoles = await newsDbContext.UserRoles.Where(x => x.NewsUserID == User.Identity!.Name).ToListAsync();
 
             var newsMaterialsSql = newsDbContext.NewsMaterials.AsQueryable();
 
@@ -35,6 +34,7 @@ namespace NewsManagementAPI.Controllers
                 newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate == reportDate);
             if (statuses?.Length > 0)
             {
+                var userRoles = await newsDbContext.UserRoles.Where(x => x.NewsUserID == User.Identity!.Name).ToListAsync();
                 foreach (var status in statuses ?? [])
                 {
                     if (!userRoles.HasPemission(status))
