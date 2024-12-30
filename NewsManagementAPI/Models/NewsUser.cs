@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using System.ComponentModel;
 
 namespace NewsManagementAPI.Models
 {
@@ -8,6 +7,7 @@ namespace NewsManagementAPI.Models
         public required string DisplayName { get; set; }
         public string? Image { get; set; }
         public List<UserRole> Roles { get; set; } = [];
+        public List<NewsUserClaim> Claims { get; set; } = [];
     }
     public enum NewsUserRole
     {

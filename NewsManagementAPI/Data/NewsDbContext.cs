@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Models;
 using System.Diagnostics;
+using System.Reflection.Emit;
 using System.Security.Claims;
 
 namespace NewsManagementAPI.Data
@@ -19,6 +20,12 @@ namespace NewsManagementAPI.Data
             else
                 optionsBuilder.UseNpgsql(@"Host=37.27.57.167; Port=5433; Database=news; Username=newsadmin; Password=MeJU?XNKJqd_D7_4");
         }
+        //protected override void OnModelCreating(ModelBuilder builder)
+        //{
+        //    modelBuilder.Entity<SupplierMultisite>().ToTable("SupplierMultisite", "XPOS");
+        //    builder.Entity<IdentityUserClaim<string>>().HasOne(x => x.)
+        //    base.OnModelCreating(builder);
+        //}
         public DbSet<NewsMaterial> NewsMaterials { get; set; }
         public DbSet<NewsMaterialHistory> NewsMaterialHistories { get; set; }
         public DbSet<NewsMaterialLog> NewsMaterialLogs { get; set; }
@@ -26,6 +33,7 @@ namespace NewsManagementAPI.Data
         public DbSet<NewsSocialMedia> NewsSocialMedias { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        //public DbSet<NewsUser> NewsUsers { get; set; }
         public async Task CreateNewsMaterialHistory(int newsMaterialId, NewsMaterialStatus status, string userID, string? assignerID)
         {
             await NewsMaterialHistories.AddAsync(new()

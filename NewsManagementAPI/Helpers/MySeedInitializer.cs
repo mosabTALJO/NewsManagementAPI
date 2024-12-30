@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using NewsManagementAPI.Data;
 using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Models;
 using NewsManagementAPI.ViewModels;
@@ -10,14 +11,15 @@ namespace NewsManagementAPI.Helpers
 {
     public class MySeedInitializer
     {
-        public static async Task SeedData(string email, string username, string password, UserManager<NewsUser> userManager, RoleManager<IdentityRole> roleManager)
+        public static async Task SeedData(string email, string username, string password, UserManager<NewsUser> userManager, RoleManager<IdentityRole> roleManager, NewsDbContext newsDbContext)
         {
             await SeedRoles(roleManager);
-            await SeedUsers(userManager, email, username, password);
+            await SeedUsers(userManager, newsDbContext, email, username, password);
         }
-        private static async Task SeedUsers(UserManager<NewsUser> userManager, string email, string username, string password)
+        private static async Task SeedUsers(UserManager<NewsUser> userManager, NewsDbContext newsDbContext, string email, string username, string password)
         {
-            var newsUser = await userManager.Users.Include(x => x.Roles).FirstOrDefaultAsync(x => x.Email == email);
+            var qwe = await newsDbContext.Users.Include(x => x.Claims).FirstOrDefaultAsync(x => x.Email == email);
+            var newsUser = await userManager.Users/*.Include(x => x.Roles)*/.Include(x => x.Claims).FirstOrDefaultAsync(x => x.Email == email);
             if (newsUser == null)
             {
                 var result = await UserHelper.CreateUser(email, username, password, userManager);
@@ -33,6 +35,10 @@ namespace NewsManagementAPI.Helpers
                 newsUser.Roles.Add(new() { Role = NewsUserRole.Admin });
                 await userManager.RemoveClaimsAsync(newsUser, await userManager.GetClaimsAsync(newsUser));
                 await userManager.AddClaimsAsync(newsUser, newsUser.Roles.Select(x => new Claim(x.Role.GetPolicyNumber(), x.Role.GetPolicyNumber())));
+            }
+            if (newsUser?.Claims.Any(x => x.ClaimType == NewsUserRole.Admin.GetPolicyNumber()) != true)
+            {
+
             }
         }
         private static async Task SeedRoles(RoleManager<IdentityRole> roleManager)

@@ -117,13 +117,13 @@ try
     {
         var userManager = serviceScope.ServiceProvider.GetService<UserManager<NewsUser>>();
         var roleManager = serviceScope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
+        var dbContext = serviceScope.ServiceProvider.GetService<NewsDbContext>();
         if (app.Environment.IsDevelopment())
-            await MySeedInitializer.SeedData("mosabtaljo@gmail.com", "mosab", "123456lolo", userManager!, roleManager!);
+            await MySeedInitializer.SeedData("mosabtaljo@gmail.com", "mosab", "123456lolo", userManager!, roleManager!, dbContext!);
         else
         {
-            var dbContext = serviceScope.ServiceProvider.GetService<NewsDbContext>();
             dbContext?.Database.Migrate();
-            await MySeedInitializer.SeedData("admin@ecommerce.com", "adminecommerce", "P@ssw0rd", userManager!, roleManager!);
+            await MySeedInitializer.SeedData("admin@ecommerce.com", "adminecommerce", "P@ssw0rd", userManager!, roleManager!, dbContext!);
         }
     }
 

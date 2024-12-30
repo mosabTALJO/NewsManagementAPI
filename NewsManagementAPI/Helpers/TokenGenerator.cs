@@ -18,8 +18,7 @@ namespace NewsManagementAPI.Helpers
             foreach (var r in user.Roles)
                 claims.Add(new(ClaimTypes.Role, r.Role.GetPolicyNumber()));
 
-            var signinKey = new SymmetricSecurityKey(
-              Encoding.UTF8.GetBytes(configuration["Jwt:SigningKey"]!));
+            var signinKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:SigningKey"]!));
 
             var token = new JwtSecurityToken(
               issuer: configuration["Jwt:Site"],

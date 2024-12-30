@@ -16,7 +16,7 @@ namespace NewsManagementAPI.Helpers
         {
             if (context.User?.Identity?.Name != null)
             {
-                if (context.User.HasClaim(x => x.Type == requirement.RequiredPolicy))
+                if (context.User.HasClaim(x => x.Value == requirement.RequiredPolicy))
                     context.Succeed(requirement);
                 else
                     context.Fail();
