@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using NewsManagementAPI.Data;
 using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Models;
-using NewsManagementAPI.ViewModels;
 using System.Security.Claims;
 
 namespace NewsManagementAPI.Helpers
