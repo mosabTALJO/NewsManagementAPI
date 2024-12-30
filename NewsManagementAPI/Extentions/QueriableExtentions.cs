@@ -48,7 +48,6 @@ namespace NewsManagementAPI.Extentions
                 Email = x.Email!,
                 Image = x.Image,
                 PhoneNumber = x.PhoneNumber,
-                Roles = x.Roles.Select(x => x.Role).ToList()
             });
         }
     }

@@ -31,11 +31,6 @@ namespace NewsManagementAPI.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("character varying(13)");
-
                     b.Property<string>("Name")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -51,10 +46,6 @@ namespace NewsManagementAPI.Migrations
                         .HasDatabaseName("RoleNameIndex");
 
                     b.ToTable("AspNetRoles", (string)null);
-
-                    b.HasDiscriminator<string>("Discriminator").HasValue("IdentityRole");
-
-                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -471,22 +462,6 @@ namespace NewsManagementAPI.Migrations
                     b.ToTable("SocialMedias");
                 });
 
-            modelBuilder.Entity("NewsManagementAPI.Models.UserRole", b =>
-                {
-                    b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityRole");
-
-                    b.Property<string>("NewsUserID")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
-
-                    b.HasIndex("NewsUserID");
-
-                    b.HasDiscriminator().HasValue("UserRole");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -630,27 +605,11 @@ namespace NewsManagementAPI.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("NewsManagementAPI.Models.UserRole", b =>
-                {
-                    b.HasOne("NewsManagementAPI.Models.NewsUser", "NewsUser")
-                        .WithMany("Roles")
-                        .HasForeignKey("NewsUserID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("NewsUser");
-                });
-
             modelBuilder.Entity("NewsManagementAPI.Models.NewsMaterial", b =>
                 {
                     b.Navigation("Histories");
 
                     b.Navigation("PublishingStrategies");
-                });
-
-            modelBuilder.Entity("NewsManagementAPI.Models.NewsUser", b =>
-                {
-                    b.Navigation("Roles");
                 });
 #pragma warning restore 612, 618
         }

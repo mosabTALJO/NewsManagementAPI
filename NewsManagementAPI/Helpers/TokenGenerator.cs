@@ -15,8 +15,6 @@ namespace NewsManagementAPI.Helpers
         {
             var claims = await userManager.GetClaimsAsync(user) ?? [];
             claims.Add(new(ClaimTypes.Name, user.Id));
-            foreach (var r in user.Roles)
-                claims.Add(new(ClaimTypes.Role, r.Role.GetPolicyNumber()));
 
             var signinKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:SigningKey"]!));
 
@@ -35,7 +33,7 @@ namespace NewsManagementAPI.Helpers
                 Expiration = token.ValidTo,
                 UserName = user.UserName,
                 DisplayName = user.DisplayName,
-                Roles = user.Roles.Select(x => x.Role).ToList()
+                Roles = claims.Where(x => x.Type == ClaimTypes.Role).Select(x => Enum.Parse<NewsUserRole>(x.Value)).ToList()
             };
         }
         public static string GeneratePassword(int passLength)

@@ -22,11 +22,11 @@ namespace NewsManagementAPI.Controllers
 
         [HttpGet]
         [Authorize(Policy = UserRoleNames.Admin)]
-        public async Task<ActionResult<ApiResponse<NewsUserVM[]>>> Get(
-            int pageNo = 1, 
-            int pageSize = 20, 
+        public async Task<ActionResult<ApiResponse<List<NewsUserVM>>>> Get(
+            int pageNo = 1,
+            int pageSize = 20,
             string? search = null,
-            [ModelBinder(BinderType = typeof(CommaSeparatedEnumModelBinder<NewsUserRole>))] List<NewsUserRole>? roles = null)//accepts statuses=1,4,3 etc...
+            string? roles = null)//comma seperated
         {
             try
             {
@@ -35,16 +35,32 @@ namespace NewsManagementAPI.Controllers
                 var q = userManager.Users;
                 if (!string.IsNullOrEmpty(search))
                     q = q.Where(x => x.UserName == search || x.Email == search);
-                if (roles?.Count > 0)
+                if (!string.IsNullOrEmpty(roles))
+                {
+                    var rolesArray = roles.Split(',');
                     q = from u in q
-                        from r in newsDbContext.UserRoles.Where(x => x.NewsUserID == u.Id)
-                        where roles.Contains(r.Role)
+                        from r in newsDbContext.UserClaims.Where(x => x.UserId == u.Id && x.ClaimType == ClaimTypes.Role)
+                        where rolesArray.Contains(r.ClaimValue)
                         select u;
-                return Done(await q.SkipTake(pageNo, pageSize).ToNewsUserVM().ToArrayAsync());
+                }
+                var users = await q.SkipTake(pageNo, pageSize).ToArrayAsync();
+                List<NewsUserVM> userVMs = [];
+                foreach (var user in users)
+                {
+                    userVMs.Add(new NewsUserVM
+                    {
+                        DisplayName = user.DisplayName,
+                        Email = user.Email!,
+                        Image = user.Image,
+                        PhoneNumber = user.PhoneNumber,
+                        Roles = (await userManager.GetClaimsAsync(user)).Where(x => x.Type == ClaimTypes.Role).Select(x => Enum.Parse<NewsUserRole>(x.Value)).ToList()
+                    });
+                }
+                return Done(userVMs);
             }
             catch (Exception ex)
             {
-                return Done<NewsUserVM[]>(ex.AllMessages(), ResponseCode.BadRequest);
+                return Done<List<NewsUserVM>>(ex.AllMessages(), ResponseCode.BadRequest);
             }
         }
 
@@ -54,7 +70,7 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                var result = await UserHelper.CreateUser(userVM, userManager);
+                var result = await UserHelper.CreateAdminUser(userVM, userManager);
                 if (result.User != null)
                     return Done(result.User.Id);
                 else

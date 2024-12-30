@@ -96,9 +96,9 @@ namespace NewsManagementAPI.Controllers
                 };
                 if (newsMaterial.ExtremelyUrgent)
                 {
-                    var reviewerIds = await newsDbContext.UserRoles
-                        .Where(x => x.Role == NewsUserRole.Reviewer)
-                        .Select(x => x.NewsUserID)
+                    var reviewerIds = await newsDbContext.UserClaims
+                        .Where(x => x.ClaimValue == NewsUserRole.Reviewer.GetPolicyNumber())
+                        .Select(x => x.UserId)
                         .ToArrayAsync();
                     foreach (var reviewerId in reviewerIds)
                     {
@@ -262,7 +262,7 @@ namespace NewsManagementAPI.Controllers
                 }
                 else if (editedVM.SkipProofreading)
                 {
-                    if (await newsDbContext.UserRoles.AnyAsync(x => x.NewsUserID == User.Identity!.Name && x.Role == NewsUserRole.Proofreader) == false)
+                    if (await newsDbContext.UserClaims.AnyAsync(x => x.UserId == User.Identity!.Name && x.ClaimValue == NewsUserRole.Proofreader.GetPolicyNumber()) == false)
                         return Done<bool>("You don't have proofreading permission!", ResponseCode.Unauthorized);
                     newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
                     await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Proofreaded, User.Identity!.Name!, null);
