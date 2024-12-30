@@ -85,15 +85,15 @@ namespace NewsManagementAPI.Controllers
         //add update and delte
 
         [HttpPost("login")]
-        public async Task<ActionResult<ApiResponse<TokenVM>>> Login(string email, string password)
+        public async Task<ActionResult<ApiResponse<TokenVM>>> Login([FromBody] LogInVM logInVM)
         {
             try
             {
-                var user = await userManager.Users.FirstOrDefaultAsync(x => !string.IsNullOrEmpty(x.Email) && x.Email == email);
+                var user = await userManager.Users.FirstOrDefaultAsync(x => !string.IsNullOrEmpty(x.Email) && x.Email == logInVM.Email);
                 if (user == null)
                     return Done<TokenVM>("Email not found!", ResponseCode.NotFound);
 
-                if (!await userManager.CheckPasswordAsync(user, password))
+                if (!await userManager.CheckPasswordAsync(user, logInVM.Password))
                     return Done<TokenVM>("Incorrect password", ResponseCode.Unauthorized);
 
                 var token = await TokenGenerator.CreateToken(user, userManager, configuration);
