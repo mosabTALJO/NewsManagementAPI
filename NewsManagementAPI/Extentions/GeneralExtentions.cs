@@ -18,24 +18,24 @@ namespace NewsManagementAPI.Extentions
         public static string GetPolicyNumber(this NewsUserRole p) => ((int)p).ToString();
         public static bool HasPemission(this ClaimsPrincipal user, NewsMaterialStatus status)
         {
-            if (user.HasClaim(x => x.Type == NewsUserRole.Admin.GetPolicyNumber()))
+            if (user.HasRole(NewsUserRole.Admin))
                 return true;
             return status switch
             {
-                NewsMaterialStatus.Reported => user.HasClaim(x => x.Type == NewsUserRole.Reviewer.GetPolicyNumber()),
-                NewsMaterialStatus.Reviewing => user.HasClaim(x => x.Type == NewsUserRole.Reviewer.GetPolicyNumber()),
-                NewsMaterialStatus.Reviewed => user.HasClaim(x => x.Type == NewsUserRole.EditingManager.GetPolicyNumber()),
-                NewsMaterialStatus.AssignedForEditing => user.HasClaim(x => x.Type == NewsUserRole.EditingManager.GetPolicyNumber() || x.Type == NewsUserRole.Editor.GetPolicyNumber()),
-                NewsMaterialStatus.Editing => user.HasClaim(x => x.Type == NewsUserRole.EditingManager.GetPolicyNumber() || x.Type == NewsUserRole.Editor.GetPolicyNumber()),
-                NewsMaterialStatus.Edited => user.HasClaim(x => x.Type == NewsUserRole.EditingManager.GetPolicyNumber()),
-                NewsMaterialStatus.AssignedForProofreading => user.HasClaim(x => x.Type == NewsUserRole.EditingManager.GetPolicyNumber() || x.Type == NewsUserRole.Proofreader.GetPolicyNumber()),
-                NewsMaterialStatus.Proofreading => user.HasClaim(x => x.Type == NewsUserRole.EditingManager.GetPolicyNumber() || x.Type == NewsUserRole.Proofreader.GetPolicyNumber()),
-                NewsMaterialStatus.Proofreaded => user.HasClaim(x => x.Type == NewsUserRole.DesigningManager.GetPolicyNumber()),
-                NewsMaterialStatus.Designing => user.HasClaim(x => x.Type == NewsUserRole.Designer.GetPolicyNumber() || x.Type == NewsUserRole.DesigningManager.GetPolicyNumber()),
-                NewsMaterialStatus.Designed => user.HasClaim(x => x.Type == NewsUserRole.PublishingManager.GetPolicyNumber()),
-                NewsMaterialStatus.AssignedForPublishing => user.HasClaim(x => x.Type == NewsUserRole.PublishingManager.GetPolicyNumber() || x.Type == NewsUserRole.Publisher.GetPolicyNumber()),
-                NewsMaterialStatus.Publishing => user.HasClaim(x => x.Type == NewsUserRole.PublishingManager.GetPolicyNumber() || x.Type == NewsUserRole.Publisher.GetPolicyNumber()),
-                NewsMaterialStatus.Published => user.HasClaim(x => x.Type == NewsUserRole.PublishingManager.GetPolicyNumber()),
+                NewsMaterialStatus.Reported => user.HasRole(NewsUserRole.Reviewer),
+                NewsMaterialStatus.Reviewing => user.HasRole(NewsUserRole.Reviewer),
+                NewsMaterialStatus.Reviewed => user.HasRole(NewsUserRole.EditingManager),
+                NewsMaterialStatus.AssignedForEditing => user.HasRole(NewsUserRole.EditingManager) || user.HasRole(NewsUserRole.Editor),
+                NewsMaterialStatus.Editing => user.HasRole(NewsUserRole.EditingManager) || user.HasRole(NewsUserRole.Editor),
+                NewsMaterialStatus.Edited => user.HasRole(NewsUserRole.EditingManager),
+                NewsMaterialStatus.AssignedForProofreading => user.HasRole(NewsUserRole.EditingManager) || user.HasRole(NewsUserRole.Proofreader),
+                NewsMaterialStatus.Proofreading => user.HasRole(NewsUserRole.EditingManager) || user.HasRole(NewsUserRole.Proofreader),
+                NewsMaterialStatus.Proofreaded => user.HasRole(NewsUserRole.DesigningManager),
+                NewsMaterialStatus.Designing => user.HasRole(NewsUserRole.Designer) || user.HasRole(NewsUserRole.DesigningManager),
+                NewsMaterialStatus.Designed => user.HasRole(NewsUserRole.PublishingManager),
+                NewsMaterialStatus.AssignedForPublishing => user.HasRole(NewsUserRole.PublishingManager) || user.HasRole(NewsUserRole.Publisher),
+                NewsMaterialStatus.Publishing => user.HasRole(NewsUserRole.PublishingManager) || user.HasRole(NewsUserRole.Publisher),
+                NewsMaterialStatus.Published => user.HasRole(NewsUserRole.PublishingManager),
                 _ => false,
             };
         }
