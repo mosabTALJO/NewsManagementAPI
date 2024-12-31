@@ -9,6 +9,7 @@ using Microsoft.Extensions.Caching.Memory;
 using NewsManagementAPI.Extentions;
 using Microsoft.EntityFrameworkCore;
 using NewsManagementAPI.Data;
+using System.Collections.Generic;
 
 namespace NewsManagementAPI.Controllers
 {
@@ -21,7 +22,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpGet]
-        [Authorize(Policy = UserRoleNames.Admin)]
+        [Authorize]
         public async Task<ActionResult<ApiResponse<List<NewsUserVM>>>> Get(
             int pageNo = 1,
             int pageSize = 20,
@@ -30,8 +31,8 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                var qwe = User;
-                var iden = User.Identity;
+                if (roles == null || roles.Length > 1)
+                    return Done<List<NewsUserVM>>("You're not an admin!", ResponseCode.Unauthorized);
                 var q = userManager.Users;
                 if (!string.IsNullOrEmpty(search))
                     q = q.Where(x => x.UserName == search || x.Email == search);
