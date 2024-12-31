@@ -50,6 +50,7 @@ namespace NewsManagementAPI.Controllers
                 {
                     userVMs.Add(new NewsUserVM
                     {
+                        Id = user.Id,
                         DisplayName = user.DisplayName,
                         Email = user.Email!,
                         Image = user.Image,
