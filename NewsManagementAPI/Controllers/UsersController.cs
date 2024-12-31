@@ -31,7 +31,7 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                if (roles == null || roles.Length > 1)
+                if ((roles == null || roles.Length > 1) && !User.HasRole(NewsUserRole.Admin))
                     return Done<List<NewsUserVM>>("You're not an admin!", ResponseCode.Unauthorized);
                 var q = userManager.Users;
                 if (!string.IsNullOrEmpty(search))
