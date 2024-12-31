@@ -7,15 +7,18 @@ namespace NewsManagementAPI.Extentions
     public static class GeneralExtentions
     {
         public static string AllMessages(this Exception ex) => $"{ex.Message}___{ex.InnerException?.Message}";
+        public static string GetPolicyNumber(this NewsUserRole p) => ((int)p).ToString();
+        public static bool HasRole(this ClaimsPrincipal user, NewsUserRole role) 
+            => user.HasClaim(x => x.Type == ClaimTypes.Role && x.Value == role.GetPolicyNumber());
         public static bool IsManager(this ClaimsPrincipal user)
         {
-            return user.HasClaim(x => x.Type == NewsUserRole.EditingManager.GetPolicyNumber()
-                                   || x.Type == NewsUserRole.ProofreadingManager.GetPolicyNumber()
-                                   || x.Type == NewsUserRole.DesigningManager.GetPolicyNumber()
-                                   || x.Type == NewsUserRole.PublishingManager.GetPolicyNumber()
-                                   || x.Type == NewsUserRole.Admin.GetPolicyNumber());
+            return user.HasRole(NewsUserRole.EditingManager)
+                || user.HasRole(NewsUserRole.ProofreadingManager)
+                || user.HasRole(NewsUserRole.DesigningManager)
+                || user.HasRole(NewsUserRole.PublishingManager)
+                || user.HasRole(NewsUserRole.Reviewer)
+                || user.HasRole(NewsUserRole.Admin);
         }
-        public static string GetPolicyNumber(this NewsUserRole p) => ((int)p).ToString();
         public static bool HasPemission(this ClaimsPrincipal user, NewsMaterialStatus status)
         {
             if (user.HasRole(NewsUserRole.Admin))
@@ -39,7 +42,5 @@ namespace NewsManagementAPI.Extentions
                 _ => false,
             };
         }
-        public static bool HasRole(this ClaimsPrincipal user, NewsUserRole role)
-            => user.HasClaim(x => x.Type == ClaimTypes.Role && x.Value == role.GetPolicyNumber());
     }
 }
