@@ -27,6 +27,7 @@ namespace NewsManagementAPI.Extentions
                 Urgency = x.Urgency,
                 ExtremelyUrgent = x.ExtremelyUrgent,
                 ContentRequiresConfirmation = x.ContentRequiresConfirmation,
+                DeadLine = x.DeadLine,
                 PublishingStrategies = x.PublishingStrategies.Select(x => x.PublishingStrategy).ToList(),
                 Histories = x.Histories!.Select(h => new NewsMaterialHistoryVM
                 {

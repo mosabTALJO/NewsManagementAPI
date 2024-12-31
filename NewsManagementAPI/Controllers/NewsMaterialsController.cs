@@ -37,9 +37,16 @@ namespace NewsManagementAPI.Controllers
                         return Done<NewsMaterialVM[]>($"You don't have permission to view {status} reports!", ResponseCode.Unauthorized);
                 }
             }
+            else if (!User.HasRole(NewsUserRole.Admin))
+                return Done<NewsMaterialVM[]>("You don't have permission to view all news materials!", ResponseCode.Unauthorized);
 
-            var newsMaterialsSql = newsDbContext.NewsMaterials
-                .Where(x => (statuses != null && statuses.Contains(x.CurrentStatus)) || (requiresConfirmation != null && x.ContentRequiresConfirmation == requiresConfirmation));
+            var newsMaterialsSql = newsDbContext.NewsMaterials.AsQueryable();
+            if (statuses != null && requiresConfirmation != null)
+                newsMaterialsSql = newsMaterialsSql.Where(x => statuses.Contains(x.CurrentStatus) || x.ContentRequiresConfirmation == requiresConfirmation);
+            else if (statuses != null)
+                newsMaterialsSql = newsMaterialsSql.Where(x => statuses.Contains(x.CurrentStatus));
+            else if (requiresConfirmation != null)
+                newsMaterialsSql = newsMaterialsSql.Where(x => x.ContentRequiresConfirmation == requiresConfirmation);
             if (reportDate != null)
                 newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate == reportDate);
 
