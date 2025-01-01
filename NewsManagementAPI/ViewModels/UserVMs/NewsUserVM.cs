@@ -1,6 +1,6 @@
 ﻿using NewsManagementAPI.Models;
 
-namespace NewsManagementAPI.ViewModels
+namespace NewsManagementAPI.ViewModels.UserVMs
 {
     public class NewsUserVM
     {
@@ -9,6 +9,7 @@ namespace NewsManagementAPI.ViewModels
         public required string Email { get; set; }
         public string? PhoneNumber { get; set; }
         public string? Image { get; set; }
+        public NewsUserType UserType { get; set; }
         public List<NewsUserRole> Roles { get; set; } = [];
     }
 }

@@ -224,7 +224,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("CurrentUserID");
 
-                    b.ToTable("NewsMaterials");
+                    b.ToTable("NewsMaterials", (string)null);
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.NewsMaterialHistory", b =>
@@ -259,7 +259,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("NewsUserID");
 
-                    b.ToTable("NewsMaterialHistories");
+                    b.ToTable("NewsMaterialHistories", (string)null);
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.NewsMaterialLog", b =>
@@ -287,7 +287,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("NewsUserID");
 
-                    b.ToTable("NewsMaterialLogs");
+                    b.ToTable("NewsMaterialLogs", (string)null);
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.NewsMaterialPublishStrat", b =>
@@ -308,7 +308,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("NewsMaterialID");
 
-                    b.ToTable("NewsMaterialPublishStrat");
+                    b.ToTable("NewsMaterialPublishStrat", (string)null);
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.NewsSocialMedia", b =>
@@ -335,7 +335,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("SocialMediaID");
 
-                    b.ToTable("NewsSocialMedias");
+                    b.ToTable("NewsSocialMedias", (string)null);
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.NewsUser", b =>
@@ -397,6 +397,9 @@ namespace NewsManagementAPI.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<int>("UserType")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedEmail")
@@ -442,7 +445,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.SocialMedia", b =>
@@ -459,7 +462,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SocialMedias");
+                    b.ToTable("SocialMedias", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

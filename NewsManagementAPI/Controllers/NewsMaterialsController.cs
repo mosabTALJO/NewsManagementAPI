@@ -7,7 +7,7 @@ using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
 using NewsManagementAPI.Services;
-using NewsManagementAPI.ViewModels;
+using NewsManagementAPI.ViewModels.NewsMaterialVMs;
 using System;
 using System.Text;
 
@@ -27,9 +27,11 @@ namespace NewsManagementAPI.Controllers
             int pageNo = 1, int pageSize = 20,
             bool? requiresConfirmation = null,
             [ModelBinder(BinderType = typeof(CommaSeparatedEnumModelBinder<NewsMaterialStatus>))] List<NewsMaterialStatus>? statuses = null,//accepts statuses=1,4,3 etc...
-            DateTime? reportDate = null)
+            //string? statuses = null,//comma seperated
+            DateTime? reportDate = null,
+            string? userId = null)
         {
-            if (statuses?.Count > 0)
+            if (statuses != null)
             {
                 foreach (var status in statuses)
                 {
@@ -37,7 +39,7 @@ namespace NewsManagementAPI.Controllers
                         return Done<NewsMaterialVM[]>($"You don't have permission to view {status} reports!", ResponseCode.Unauthorized);
                 }
             }
-            else if (!User.HasRole(NewsUserRole.Admin))
+            else if (string.IsNullOrEmpty(userId) && !User.HasRole(NewsUserRole.Admin))
                 return Done<NewsMaterialVM[]>("You don't have permission to view all news materials!", ResponseCode.Unauthorized);
 
             var newsMaterialsSql = newsDbContext.NewsMaterials.AsQueryable();
@@ -49,6 +51,8 @@ namespace NewsManagementAPI.Controllers
                 newsMaterialsSql = newsMaterialsSql.Where(x => x.ContentRequiresConfirmation == requiresConfirmation);
             if (reportDate != null)
                 newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate == reportDate);
+            if (!string.IsNullOrEmpty(userId))
+                newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == userId);
 
             var newsMaterials = await newsMaterialsSql.ToNewsMaterialVM()
                 .OrderByDescending(x => x.Urgency).ThenByDescending(x => x.Priority)
@@ -127,27 +131,27 @@ namespace NewsManagementAPI.Controllers
             }
         }
 
-        [HttpPut("BeingReview")]
-        [Authorize(Policy = UserRoleNames.Reviewer)]
-        public async Task<ActionResult<ApiResponse<bool>>> BeingReview(int newsMaterialId)
-        {
-            try
-            {
-                if (await newsDbContext.NewsMaterials.AnyAsync(x => x.ID == newsMaterialId && x.CurrentStatus == NewsMaterialStatus.Reported) == false)
-                    return Done<bool>("Not found!", ResponseCode.NotFound);
-                var newsMaterial = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
-                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, User.Identity!.Name)
-                                              .SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Reviewing));
+        //[HttpPut("BeingReview")]
+        //[Authorize(Policy = UserRoleNames.Reviewer)]
+        //public async Task<ActionResult<ApiResponse<bool>>> BeingReview(int newsMaterialId)
+        //{
+        //    try
+        //    {
+        //        if (await newsDbContext.NewsMaterials.AnyAsync(x => x.ID == newsMaterialId && x.CurrentStatus == NewsMaterialStatus.Reported) == false)
+        //            return Done<bool>("Not found!", ResponseCode.NotFound);
+        //        var newsMaterial = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+        //            .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, User.Identity!.Name)
+        //                                      .SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Reviewing));
 
-                await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, NewsMaterialStatus.Reviewing, User.Identity!.Name!, null);
-                await newsDbContext.SaveChangesAsync();
-                return Done(true);
-            }
-            catch (Exception ex)
-            {
-                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
-            }
-        }
+        //        await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, NewsMaterialStatus.Reviewing, User.Identity!.Name!, null);
+        //        await newsDbContext.SaveChangesAsync();
+        //        return Done(true);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+        //    }
+        //}
 
         [HttpPut("EndReview")]
         [Authorize(Policy = UserRoleNames.Reviewer)]

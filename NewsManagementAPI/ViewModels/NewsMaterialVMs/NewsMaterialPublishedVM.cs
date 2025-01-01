@@ -1,4 +1,4 @@
-﻿namespace NewsManagementAPI.ViewModels
+﻿namespace NewsManagementAPI.ViewModels.NewsMaterialVMs
 {
     public class NewsMaterialPublishedVM
     {

@@ -1,6 +1,7 @@
 ﻿using NewsManagementAPI.Models;
+using NewsManagementAPI.ViewModels.UserVMs;
 
-namespace NewsManagementAPI.ViewModels
+namespace NewsManagementAPI.ViewModels.NewsMaterialVMs
 {
     public class NewsMaterialVM
     {

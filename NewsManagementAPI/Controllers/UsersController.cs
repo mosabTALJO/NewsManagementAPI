@@ -10,6 +10,7 @@ using NewsManagementAPI.Extentions;
 using Microsoft.EntityFrameworkCore;
 using NewsManagementAPI.Data;
 using System.Collections.Generic;
+using NewsManagementAPI.ViewModels.UserVMs;
 
 namespace NewsManagementAPI.Controllers
 {
@@ -23,7 +24,7 @@ namespace NewsManagementAPI.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<ActionResult<ApiResponse<List<NewsUserVM>>>> Get(
+        public async Task<ActionResult<ApiResponse<NewsUserVM[]>>> Get(
             int pageNo = 1,
             int pageSize = 20,
             string? search = null,
@@ -32,37 +33,22 @@ namespace NewsManagementAPI.Controllers
             try
             {
                 if ((roles == null || roles.Length > 1) && !User.HasRole(NewsUserRole.Admin))
-                    return Done<List<NewsUserVM>>("You're not an admin!", ResponseCode.Unauthorized);
-                var q = userManager.Users;
+                    return Done<NewsUserVM[]>("You're not an admin!", ResponseCode.Unauthorized);
+                var q = userManager.Users.AsQueryable();
                 if (!string.IsNullOrEmpty(search))
-                    q = q.Where(x => x.UserName == search || x.Email == search);
+                    q = q.Where(x => x.DisplayName == search || x.Email == search);
+                var claimsQuery = newsDbContext.UserClaims.Where(x => x.ClaimType == ClaimTypes.Role);
                 if (!string.IsNullOrEmpty(roles))
                 {
                     var rolesArray = roles.Split(',');
-                    q = from u in q
-                        from r in newsDbContext.UserClaims.Where(x => x.UserId == u.Id && x.ClaimType == ClaimTypes.Role)
-                        where rolesArray.Contains(r.ClaimValue)
-                        select u;
+                    claimsQuery = claimsQuery.Where(x => rolesArray.Contains(x.ClaimValue));
                 }
-                var users = await q.SkipTake(pageNo, pageSize).ToArrayAsync();
-                List<NewsUserVM> userVMs = [];
-                foreach (var user in users)
-                {
-                    userVMs.Add(new NewsUserVM
-                    {
-                        Id = user.Id,
-                        DisplayName = user.DisplayName,
-                        Email = user.Email!,
-                        Image = user.Image,
-                        PhoneNumber = user.PhoneNumber,
-                        Roles = (await userManager.GetClaimsAsync(user)).Where(x => x.Type == ClaimTypes.Role).Select(x => Enum.Parse<NewsUserRole>(x.Value)).ToList()
-                    });
-                }
+                var userVMs = await q.SkipTake(pageNo, pageSize).OrderBy(x => x.DisplayName).ToNewsUserVMsAsync(claimsQuery);
                 return Done(userVMs);
             }
             catch (Exception ex)
             {
-                return Done<List<NewsUserVM>>(ex.AllMessages(), ResponseCode.BadRequest);
+                return Done<NewsUserVM[]>(ex.AllMessages(), ResponseCode.BadRequest);
             }
         }
 
@@ -84,7 +70,55 @@ namespace NewsManagementAPI.Controllers
             }
         }
 
-        //add update and delte
+        [Authorize(Policy = UserRoleNames.Admin)]
+        [HttpPut("UpdateUser")]
+        public async Task<ActionResult<ApiResponse<bool>>> UpdateUser(UpdateUserVM userVM)
+        {
+            try
+            {
+                var user = await userManager.FindByIdAsync(userVM.Id);
+                if (user == null)
+                    return Done<bool>("Not found!", ResponseCode.NotFound);
+                if (string.IsNullOrEmpty(userVM.Email))
+                    return Done<bool>("Email is missing!", ResponseCode.BadRequest);
+                if (string.IsNullOrEmpty(userVM.DisplayName))
+                    return Done<bool>("Display name is missing!", ResponseCode.BadRequest);
+                user.PhoneNumber = userVM.PhoneNumber;
+                user.Email = userVM.Email;
+                user.UserName = userVM.DisplayName;
+                user.DisplayName = userVM.DisplayName;
+                user.UserType = userVM.UserType;
+                if (!string.IsNullOrEmpty(userVM.NewPassword) && !string.IsNullOrEmpty(userVM.OldPassword) && userVM.NewPassword != userVM.OldPassword)
+                {
+                    var changePass = await userManager.ChangePasswordAsync(user, userVM.OldPassword, userVM.NewPassword);
+                    if (!changePass.Succeeded)
+                        return Done<bool>(string.Join(", ", changePass.Errors.Select(x => $"{x.Code}, {x.Description}")), ResponseCode.BadRequest);
+                }
+                await userManager.UpdateAsync(user);
+                return Done(true);
+            }
+            catch (Exception ex)
+            {
+                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
+        [Authorize(Policy = UserRoleNames.Admin)]
+        [HttpDelete("DeleteUser")]
+        public async Task<ActionResult<ApiResponse<bool>>> DeleteUser(string userId)
+        {
+            try
+            {
+                var result = await userManager.Users.Where(x => x.Id == userId).ExecuteDeleteAsync();
+                if (result == 0)
+                    return Done<bool>("Not found!", ResponseCode.NotFound);
+                return Done(true);
+            }
+            catch (Exception ex)
+            {
+                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
 
         [HttpPost("login")]
         public async Task<ActionResult<ApiResponse<TokenVM>>> Login([FromBody] LogInVM logInVM)

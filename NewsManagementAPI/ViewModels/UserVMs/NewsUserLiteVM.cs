@@ -1,4 +1,4 @@
-﻿namespace NewsManagementAPI.ViewModels
+﻿namespace NewsManagementAPI.ViewModels.UserVMs
 {
     public class NewsUserLiteVM
     {

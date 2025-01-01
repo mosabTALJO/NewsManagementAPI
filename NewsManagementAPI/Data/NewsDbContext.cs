@@ -22,8 +22,10 @@ namespace NewsManagementAPI.Data
         }
         //protected override void OnModelCreating(ModelBuilder builder)
         //{
-        //    modelBuilder.Entity<SupplierMultisite>().ToTable("SupplierMultisite", "XPOS");
-        //    builder.Entity<IdentityUserClaim<string>>().HasOne(x => x.)
+        //    //builder.Entity<NewsUserClaim>().HasOne(x => x.User).WithMany(x => x.Claims).HasForeignKey(x => x.UserId);
+        //    //builder.Entity<IdentityUserClaim<string>>()..HasOne(x => x.UserId).WithMany(x => x.Claims).HasForeignKey(x => x.UserId);
+        //    //builder.Entity<NewsUserClaim>().ToTable("AspNetUserClaims").Property(x => x.UserId)..HasColumnName("UserId");
+        //    builder.Entity<IdentityUserClaim<string>>().ToTable("AspNetUserClaims").Property(x => x.UserId).HasColumnName("NewsUserId");
         //    base.OnModelCreating(builder);
         //}
         public DbSet<NewsMaterial> NewsMaterials { get; set; }

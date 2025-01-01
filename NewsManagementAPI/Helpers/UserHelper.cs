@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Models;
-using NewsManagementAPI.ViewModels;
+using NewsManagementAPI.ViewModels.UserVMs;
 using System.Security.Claims;
 
 namespace NewsManagementAPI.Helpers
@@ -29,6 +29,7 @@ namespace NewsManagementAPI.Helpers
                 Email = userVM.Email,
                 Image = userVM.Image,
                 PhoneNumber = userVM.PhoneNumber,
+                UserType = userVM.UserType,
             };
             var result = await userManager.CreateAsync(newsUser, userVM.Password);
             if (result.Succeeded)

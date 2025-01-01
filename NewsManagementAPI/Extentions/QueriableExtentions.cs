@@ -1,5 +1,11 @@
-﻿using NewsManagementAPI.Models;
-using NewsManagementAPI.ViewModels;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
+using NewsManagementAPI.Data;
+using NewsManagementAPI.Models;
+using NewsManagementAPI.ViewModels.NewsMaterialVMs;
+using NewsManagementAPI.ViewModels.UserVMs;
+using System.Security.Claims;
 
 namespace NewsManagementAPI.Extentions
 {
@@ -41,15 +47,44 @@ namespace NewsManagementAPI.Extentions
                 CurrentUser = x.CurrentUser == null ? null : new() { DisplayName = x.CurrentUser.DisplayName, Id = x.CurrentUserID! }
             });
         }
-        public static IQueryable<NewsUserVM> ToNewsUserVM(this IQueryable<NewsUser> source)
+        public static IQueryable<NewsUserVM> ToNewsUserVM(this IQueryable<NewsUser> source, IQueryable<IdentityUserClaim<string>> claims)
         {
-            return source.Select(x => new NewsUserVM
+            return source.GroupJoin(claims, x => x.Id, x => x.UserId, (user, cs) => new NewsUserVM
             {
-                DisplayName = x.DisplayName,
-                Email = x.Email!,
-                Image = x.Image,
-                PhoneNumber = x.PhoneNumber,
-            });
+                Id = user.Id,
+                DisplayName = user.DisplayName,
+                Email = user.Email!,
+                Image = user.Image,
+                PhoneNumber = user.PhoneNumber,
+                UserType = user.UserType,
+                Roles = cs.Select(x => Enum.Parse<NewsUserRole>(x.ClaimValue!)).ToList()
+            }).Where(x => x.Roles.Any());
+        }
+        public static async Task<NewsUserVM[]> ToNewsUserVMsAsync(this IQueryable<NewsUser> source, IQueryable<IdentityUserClaim<string>> claims)
+        {
+            var q = from u in source
+                    from c in claims.Where(x => x.UserId == u.Id)
+                    select new
+                    {
+                        u.Id,
+                        u.DisplayName,
+                        u.Email,
+                        u.Image,
+                        u.PhoneNumber,
+                        u.UserType,
+                        c.ClaimValue
+                    };
+            var data = await q.ToArrayAsync();
+            return data.GroupBy(x => x.Id).Select(x => new NewsUserVM
+            {
+                Id = x.Key,
+                DisplayName = x.First().DisplayName,
+                Email = x.First().Email!,
+                Image = x.First().Image,
+                PhoneNumber = x.First().PhoneNumber,
+                UserType = x.First().UserType,
+                Roles = x.Select(x => Enum.Parse<NewsUserRole>(x.ClaimValue!)).ToList()
+            }).ToArray();
         }
     }
 }
