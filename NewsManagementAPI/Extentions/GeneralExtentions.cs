@@ -1,4 +1,5 @@
-﻿using NewsManagementAPI.Helpers;
+﻿using Microsoft.AspNetCore.Identity;
+using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
 using System.Security.Claims;
 
@@ -10,6 +11,8 @@ namespace NewsManagementAPI.Extentions
         public static string GetPolicyNumber(this NewsUserRole p) => ((int)p).ToString();
         public static bool HasRole(this ClaimsPrincipal user, NewsUserRole role) 
             => user.HasClaim(x => x.Type == ClaimTypes.Role && x.Value == role.GetPolicyNumber());
+        public static bool HasRole(this IEnumerable<IdentityUserClaim<string>> claims, NewsUserRole role) 
+            => claims.Any(x => x.ClaimType == ClaimTypes.Role && x.ClaimValue == role.GetPolicyNumber());
         public static bool IsManager(this ClaimsPrincipal user)
         {
             return user.HasRole(NewsUserRole.EditingManager)

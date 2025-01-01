@@ -27,7 +27,7 @@ namespace NewsManagementAPI.Controllers
             int pageNo = 1, int pageSize = 20,
             bool? requiresConfirmation = null,
             [ModelBinder(BinderType = typeof(CommaSeparatedEnumModelBinder<NewsMaterialStatus>))] List<NewsMaterialStatus>? statuses = null,//accepts statuses=1,4,3 etc...
-            //string? statuses = null,//comma seperated
+                                                                                                                                            //string? statuses = null,//comma seperated
             DateTime? reportDate = null,
             string? userId = null)
         {
@@ -511,6 +511,61 @@ namespace NewsManagementAPI.Controllers
                                                                   .SetProperty(x => x.PublisherNote, note));
                 if (count == 0)
                     return Done<bool>("Not found", ResponseCode.NotFound);
+                return Done(true);
+            }
+            catch (Exception ex)
+            {
+                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
+        [HttpPut("Assign")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<bool>>> Assign(int newsMaterialId, string asigneeId)
+        {
+            try
+            {
+                if (!User.IsManager())
+                    return Done<bool>("You are not authorized to do this action!", ResponseCode.Unauthorized);
+                var asigneeClaims = await newsDbContext.UserClaims.Where(x => x.UserId == asigneeId).AsNoTracking().ToArrayAsync();
+                NewsMaterialStatus status;
+                if (User.HasRole(NewsUserRole.EditingManager))
+                {
+                    if (asigneeClaims.HasRole(NewsUserRole.Editor))
+                        return Done<bool>("You can only assign to editors!", ResponseCode.BadRequest);
+                    status = NewsMaterialStatus.AssignedForEditing;
+                }
+                else if (User.HasRole(NewsUserRole.ProofreadingManager))
+                {
+                    if (asigneeClaims.HasRole(NewsUserRole.Proofreader))
+                        return Done<bool>("You can only assign to proofreaders!", ResponseCode.BadRequest);
+                    status = NewsMaterialStatus.AssignedForProofreading;
+                }
+                else if (User.HasRole(NewsUserRole.DesigningManager))
+                {
+                    if (asigneeClaims.HasRole(NewsUserRole.Designer))
+                        return Done<bool>("You can only assign to designers!", ResponseCode.BadRequest);
+                    status = NewsMaterialStatus.AssignedForDesigning;
+                }
+                else if (User.HasRole(NewsUserRole.PublishingManager))
+                {
+                    if (asigneeClaims.HasRole(NewsUserRole.Publisher))
+                        return Done<bool>("You can only assign to publishers!", ResponseCode.BadRequest);
+                    status = NewsMaterialStatus.AssignedForPublishing;
+                }
+                //else if (User.HasRole(NewsUserRole.Admin))
+                //    status = NewsMaterialStatus.AssignedForDesigning;
+                else
+                    return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+
+                var count = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, asigneeId)
+                                              .SetProperty(x => x.CurrentStatus, status));
+                if (count == 0)
+                    return Done<bool>("Not found!", ResponseCode.NotFound);
+
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, status, asigneeId, User.Identity!.Name!);
+                await newsDbContext.SaveChangesAsync();
                 return Done(true);
             }
             catch (Exception ex)
