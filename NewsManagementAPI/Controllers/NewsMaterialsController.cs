@@ -573,5 +573,61 @@ namespace NewsManagementAPI.Controllers
                 return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
             }
         }
+
+        [HttpPut("Begin")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<bool>>> Begin(int newsMaterialId)
+        {
+            try
+            {
+                var newsMaterial = await newsDbContext.NewsMaterials
+                    .Where(x => x.ID == newsMaterialId)
+                    .Select(x => new { x.CurrentStatus, x.CurrentUserID, x.ContentRequiresConfirmation, x.ContentConfirmed })
+                    .FirstOrDefaultAsync();
+                if (newsMaterial == null)
+                    return Done<bool>("Not found!", ResponseCode.NotFound);
+                if (newsMaterial.CurrentUserID != User.Identity!.Name)
+                    return Done<bool>("This news material is not assigned to you!", ResponseCode.Unauthorized);
+                if (newsMaterial.ContentRequiresConfirmation && !newsMaterial.ContentConfirmed)
+                    return Done<bool>("This news material requires the publisher's confirmation first!", ResponseCode.BadRequest);
+                NewsMaterialStatus status;
+                if (User.HasRole(NewsUserRole.Editor))
+                {
+                    if (newsMaterial.CurrentStatus != NewsMaterialStatus.AssignedForEditing)
+                        return Done<bool>("This news material is not in the editing stage", ResponseCode.BadRequest);
+                    status = NewsMaterialStatus.Editing;
+                }
+                else if (User.HasRole(NewsUserRole.Proofreader))
+                {
+                    if (newsMaterial.CurrentStatus != NewsMaterialStatus.AssignedForProofreading)
+                        return Done<bool>("This news material is not in the proofreading stage", ResponseCode.BadRequest);
+                    status = NewsMaterialStatus.Proofreading;
+                }
+                else if (User.HasRole(NewsUserRole.Designer))
+                {
+                    if (newsMaterial.CurrentStatus != NewsMaterialStatus.AssignedForDesigning)
+                        return Done<bool>("This news material is not in the designing stage", ResponseCode.BadRequest);
+                    status = NewsMaterialStatus.Designing;
+                }
+                //else if (User.HasRole(NewsUserRole.Publisher))
+                //{
+                //    if (newsMaterial.CurrentStatus != NewsMaterialStatus.AssignedForPublishing)
+                //        return Done<bool>("This news material is not in the publishing stage", ResponseCode.BadRequest);
+                //    status = NewsMaterialStatus.Publishing;
+                //}
+                else
+                    return Done<bool>("You don't need to begin!", ResponseCode.BadRequest);
+
+                await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentStatus, status));
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, status, User.Identity!.Name!, null);
+                await newsDbContext.SaveChangesAsync();
+                return Done(true);
+            }
+            catch (Exception ex)
+            {
+                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
     }
 }
