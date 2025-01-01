@@ -43,7 +43,7 @@ namespace NewsManagementAPI.Controllers
                     var rolesArray = roles.Split(',');
                     claimsQuery = claimsQuery.Where(x => rolesArray.Contains(x.ClaimValue));
                 }
-                var userVMs = await q.SkipTake(pageNo, pageSize).OrderBy(x => x.DisplayName).ToNewsUserVMsAsync(claimsQuery);
+                var userVMs = await q.OrderBy(x => x.DisplayName).SkipTake(pageNo, pageSize).ToNewsUserVMsAsync(claimsQuery);
                 return Done(userVMs);
             }
             catch (Exception ex)
