@@ -531,25 +531,25 @@ namespace NewsManagementAPI.Controllers
                 NewsMaterialStatus status;
                 if (User.HasRole(NewsUserRole.EditingManager))
                 {
-                    if (asigneeClaims.HasRole(NewsUserRole.Editor))
+                    if (!asigneeClaims.HasRole(NewsUserRole.Editor))
                         return Done<bool>("You can only assign to editors!", ResponseCode.BadRequest);
                     status = NewsMaterialStatus.AssignedForEditing;
                 }
                 else if (User.HasRole(NewsUserRole.ProofreadingManager))
                 {
-                    if (asigneeClaims.HasRole(NewsUserRole.Proofreader))
+                    if (!asigneeClaims.HasRole(NewsUserRole.Proofreader))
                         return Done<bool>("You can only assign to proofreaders!", ResponseCode.BadRequest);
                     status = NewsMaterialStatus.AssignedForProofreading;
                 }
                 else if (User.HasRole(NewsUserRole.DesigningManager))
                 {
-                    if (asigneeClaims.HasRole(NewsUserRole.Designer))
+                    if (!asigneeClaims.HasRole(NewsUserRole.Designer))
                         return Done<bool>("You can only assign to designers!", ResponseCode.BadRequest);
                     status = NewsMaterialStatus.AssignedForDesigning;
                 }
                 else if (User.HasRole(NewsUserRole.PublishingManager))
                 {
-                    if (asigneeClaims.HasRole(NewsUserRole.Publisher))
+                    if (!asigneeClaims.HasRole(NewsUserRole.Publisher))
                         return Done<bool>("You can only assign to publishers!", ResponseCode.BadRequest);
                     status = NewsMaterialStatus.AssignedForPublishing;
                 }
