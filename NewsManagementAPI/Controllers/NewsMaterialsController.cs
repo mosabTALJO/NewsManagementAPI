@@ -28,22 +28,23 @@ namespace NewsManagementAPI.Controllers
             bool? requiresConfirmation = null,
             [ModelBinder(BinderType = typeof(CommaSeparatedEnumModelBinder<NewsMaterialStatus>))] List<NewsMaterialStatus>? statuses = null,//accepts statuses=1,4,3 etc...
                                                                                                                                             //string? statuses = null,//comma seperated
-            DateTime? reportDate = null,
+            DateTime? reportedAfter = null,
+            DateTime? reportedBefore = null,
             string? userId = null)
         {
             var allowedStatuses = User.GetAllowedStatuses();
             if (statuses?.Except(allowedStatuses) is IEnumerable<NewsMaterialStatus> forbiddenStatuses && forbiddenStatuses.Any())
                 return Done<NewsMaterialVM[]>($"You don't have permission to view these statuses \"{string.Join(", ", forbiddenStatuses)}\"", ResponseCode.Unauthorized);
-
+            statuses ??= allowedStatuses;
             var newsMaterialsSql = newsDbContext.NewsMaterials.AsQueryable();
-            if (statuses != null && requiresConfirmation != null)
-                newsMaterialsSql = newsMaterialsSql.Where(x => statuses.Contains(x.CurrentStatus) || x.ContentRequiresConfirmation == requiresConfirmation);
-            else if (statuses != null)
+            if (statuses != null)
                 newsMaterialsSql = newsMaterialsSql.Where(x => statuses.Contains(x.CurrentStatus));
-            else if (requiresConfirmation != null)
+            if (requiresConfirmation != null)
                 newsMaterialsSql = newsMaterialsSql.Where(x => x.ContentRequiresConfirmation == requiresConfirmation);
-            if (reportDate != null)
-                newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate == reportDate);
+            if (reportedAfter != null)
+                newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate >= reportedAfter);
+            if (reportedBefore != null)
+                newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate <= reportedBefore);
             if (!string.IsNullOrEmpty(userId))
                 newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == userId);
 
