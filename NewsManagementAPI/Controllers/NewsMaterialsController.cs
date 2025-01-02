@@ -376,16 +376,16 @@ namespace NewsManagementAPI.Controllers
                 StringBuilder sb = new();
                 if (!string.IsNullOrEmpty(newsMaterial.FinalAttachments) && newsMaterial.FinalAttachments != designedVM.FinalAttachments)
                     sb.AppendLine($"Final attachments changed from: {newsMaterial.FinalAttachments}, To: {designedVM.FinalAttachments}");
-                if (designedVM.Done)
-                {
-                    newsMaterial.CurrentStatus = NewsMaterialStatus.Designed;
-                    await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Designed, User.Identity!.Name!, null);
-                }
-                else
-                {
-                    newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
-                    await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Designed, User.Identity!.Name!, null);
-                }
+                //if (designedVM.Done)
+                //{
+                newsMaterial.CurrentStatus = NewsMaterialStatus.Designed;
+                await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Designed, User.Identity!.Name!, null);
+                //}
+                //else
+                //{
+                //    newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
+                //    await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Designed, User.Identity!.Name!, null);
+                //}
                 newsMaterial.CurrentUserID = null;
                 newsMaterial.FinalAttachments = designedVM.FinalAttachments;
                 newsDbContext.NewsMaterials.Update(newsMaterial);
@@ -446,5 +446,30 @@ namespace NewsManagementAPI.Controllers
                 return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
             }
         }
+
+        //[HttpPut("SendBack")]
+        //[Authorize]
+        //public async Task<ActionResult<ApiResponse<bool>>> SendBack(int materialId)
+        //{
+        //    try
+        //    {
+        //        var newsMaterial = await newsDbContext.NewsMaterials.Where(x => x.ID == materialId)
+        //            .Select(x => new
+        //            {
+        //                x.CurrentStatus,
+        //                x.CurrentUserID
+        //            }).FirstOrDefaultAsync();
+        //        if (newsMaterial == null)
+        //            return Done<bool>("Not found!", ResponseCode.NotFound);
+        //        if (newsMaterial.CurrentStatus == NewsMaterialStatus.Reviewed)
+        //        {
+
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+        //    }
+        //}
     }
 }

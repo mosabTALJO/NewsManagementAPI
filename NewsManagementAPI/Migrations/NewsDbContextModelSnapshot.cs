@@ -224,7 +224,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("CurrentUserID");
 
-                    b.ToTable("NewsMaterials", (string)null);
+                    b.ToTable("NewsMaterials");
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.NewsMaterialHistory", b =>
@@ -259,7 +259,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("NewsUserID");
 
-                    b.ToTable("NewsMaterialHistories", (string)null);
+                    b.ToTable("NewsMaterialHistories");
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.NewsMaterialLog", b =>
@@ -287,7 +287,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("NewsUserID");
 
-                    b.ToTable("NewsMaterialLogs", (string)null);
+                    b.ToTable("NewsMaterialLogs");
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.NewsMaterialPublishStrat", b =>
@@ -308,7 +308,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("NewsMaterialID");
 
-                    b.ToTable("NewsMaterialPublishStrat", (string)null);
+                    b.ToTable("NewsMaterialPublishStrat");
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.NewsSocialMedia", b =>
@@ -335,7 +335,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("SocialMediaID");
 
-                    b.ToTable("NewsSocialMedias", (string)null);
+                    b.ToTable("NewsSocialMedias");
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.NewsUser", b =>
@@ -445,7 +445,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.SocialMedia", b =>
@@ -460,9 +460,13 @@ namespace NewsManagementAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("ID");
 
-                    b.ToTable("SocialMedias", (string)null);
+                    b.ToTable("SocialMedias");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -583,13 +587,13 @@ namespace NewsManagementAPI.Migrations
             modelBuilder.Entity("NewsManagementAPI.Models.NewsSocialMedia", b =>
                 {
                     b.HasOne("NewsManagementAPI.Models.NewsMaterial", "NewsMaterial")
-                        .WithMany()
+                        .WithMany("NewsSocialMedias")
                         .HasForeignKey("NewsMaterialID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("NewsManagementAPI.Models.SocialMedia", "SocialMedia")
-                        .WithMany()
+                        .WithMany("NewsSocialMedias")
                         .HasForeignKey("SocialMediaID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -612,7 +616,14 @@ namespace NewsManagementAPI.Migrations
                 {
                     b.Navigation("Histories");
 
+                    b.Navigation("NewsSocialMedias");
+
                     b.Navigation("PublishingStrategies");
+                });
+
+            modelBuilder.Entity("NewsManagementAPI.Models.SocialMedia", b =>
+                {
+                    b.Navigation("NewsSocialMedias");
                 });
 #pragma warning restore 612, 618
         }
