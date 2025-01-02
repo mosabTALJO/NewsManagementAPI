@@ -21,6 +21,7 @@ try
     builder.Services.AddDbContext<NewsDbContext>();
 
     builder.Services.AddScoped<INotificationService, NotificationService>();
+    builder.Services.AddScoped<IFileService, FileService>();
 
     #region Authentication
     TokenValidationParameters tokenValidationParameters = new()
