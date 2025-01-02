@@ -43,5 +43,19 @@ namespace NewsManagementAPI.Helpers
                 return (null, error);
             }
         }
+        public static readonly Dictionary<NewsUserRole, NewsMaterialStatus[]> RoleAllowedStatuses = new()
+        {
+            { NewsUserRole.Admin, Enum.GetValues<NewsMaterialStatus>() },
+            { NewsUserRole.Reporter, [NewsMaterialStatus.Draft] },
+            { NewsUserRole.Reviewer, [NewsMaterialStatus.Reported] },
+            { NewsUserRole.Editor, [NewsMaterialStatus.AssignedForEditing, NewsMaterialStatus.Editing] },
+            { NewsUserRole.EditingManager, [NewsMaterialStatus.Reviewed, NewsMaterialStatus.AssignedForEditing, NewsMaterialStatus.Editing] },
+            { NewsUserRole.Proofreader, [NewsMaterialStatus.AssignedForProofreading, NewsMaterialStatus.Proofreading] },
+            { NewsUserRole.ProofreadingManager, [NewsMaterialStatus.AssignedForEditing, NewsMaterialStatus.Editing, NewsMaterialStatus.Edited] },
+            { NewsUserRole.Designer, [NewsMaterialStatus.AssignedForDesigning, NewsMaterialStatus.Designing] },
+            { NewsUserRole.DesigningManager, [NewsMaterialStatus.AssignedForDesigning, NewsMaterialStatus.Designing, NewsMaterialStatus.Proofreaded] },
+            { NewsUserRole.Publisher, [NewsMaterialStatus.AssignedForPublishing] },
+            { NewsUserRole.PublishingManager, [NewsMaterialStatus.AssignedForPublishing, NewsMaterialStatus.Designed, NewsMaterialStatus.WaitingPublisherConfirmation] },
+        };
     }
 }

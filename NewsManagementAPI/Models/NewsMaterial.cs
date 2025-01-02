@@ -46,8 +46,9 @@
     }
     public enum NewsMaterialStatus
     {
+        Draft = -1,
         Reported = 0,
-        Reviewing = 1,
+        //Reviewing = 1,
         Reviewed = 2,
         AssignedForEditing = 3,
         Editing = 4,
@@ -59,7 +60,7 @@
         Designing = 10,
         Designed = 11,
         AssignedForPublishing = 12,
-        Publishing = 13,
+        //Publishing = 13,
         Published = 14,
         WaitingPublisherConfirmation = 15,
     }
