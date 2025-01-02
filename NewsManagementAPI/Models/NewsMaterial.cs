@@ -25,6 +25,7 @@
         public DateTime? DeadLine { get; set; }
         public virtual List<NewsMaterialHistory> Histories { get; set; } = [];
         public virtual List<NewsMaterialPublishStrat> PublishingStrategies { get; set; } = [];
+        public virtual List<NewsSocialMedia> NewsSocialMedias { get; set; } = [];
     }
     public enum NewsMaterialType
     {
