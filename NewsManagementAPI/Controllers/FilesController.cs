@@ -63,7 +63,7 @@ namespace NewsManagementAPI.Controllers
             if (string.IsNullOrEmpty(image))
                 return BadRequest();
 
-            var physicalPath = h is null ? fileService.GetFilePath(image, w, crop) : fileService.GetFilePath(image, w, h ?? 150, crop);
+            var physicalPath = h is null ? fileService.GetFilePath(image, w, crop) : fileService.GetFilePath(image, w, h.Value, crop);
             return new PhysicalFileResult(physicalPath, "image/jpeg");
         }
     }

@@ -447,29 +447,103 @@ namespace NewsManagementAPI.Controllers
             }
         }
 
-        //[HttpPut("SendBack")]
-        //[Authorize]
-        //public async Task<ActionResult<ApiResponse<bool>>> SendBack(int materialId)
-        //{
-        //    try
-        //    {
-        //        var newsMaterial = await newsDbContext.NewsMaterials.Where(x => x.ID == materialId)
-        //            .Select(x => new
-        //            {
-        //                x.CurrentStatus,
-        //                x.CurrentUserID
-        //            }).FirstOrDefaultAsync();
-        //        if (newsMaterial == null)
-        //            return Done<bool>("Not found!", ResponseCode.NotFound);
-        //        if (newsMaterial.CurrentStatus == NewsMaterialStatus.Reviewed)
-        //        {
-
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
-        //    }
-        //}
+        [HttpPut("SendBack")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<bool>>> SendBack(int materialId, string note)
+        {
+            try
+            {
+                var newsMaterial = await newsDbContext.NewsMaterials.Where(x => x.ID == materialId)
+                    .Select(x => new
+                    {
+                        x.CurrentStatus,
+                        x.CurrentUserID
+                    }).FirstOrDefaultAsync();
+                if (newsMaterial == null)
+                    return Done<bool>("Not found!", ResponseCode.NotFound);
+                NewsMaterialStatus status;
+                switch (newsMaterial.CurrentStatus)
+                {
+                    case NewsMaterialStatus.Reviewed:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.EditingManager))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Reported;
+                        break;
+                    case NewsMaterialStatus.AssignedForEditing:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.Editor) && !User.HasRole(NewsUserRole.EditingManager))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Reviewed;
+                        break;
+                    case NewsMaterialStatus.Editing:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.Editor) && !User.HasRole(NewsUserRole.EditingManager))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Reviewed;
+                        break;
+                    case NewsMaterialStatus.Edited:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.ProofreadingManager))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Reviewed;
+                        break;
+                    case NewsMaterialStatus.AssignedForProofreading:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.Proofreader) && !User.HasRole(NewsUserRole.ProofreadingManager))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Edited;
+                        break;
+                    case NewsMaterialStatus.Proofreading:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.Proofreader) && !User.HasRole(NewsUserRole.ProofreadingManager))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Edited;
+                        break;
+                    case NewsMaterialStatus.Proofreaded:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.DesigningManager))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Edited;
+                        break;
+                    case NewsMaterialStatus.AssignedForDesigning:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.Designer) && !User.HasRole(NewsUserRole.DesigningManager))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Proofreaded;
+                        break;
+                    case NewsMaterialStatus.Designing:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.Designer) && !User.HasRole(NewsUserRole.DesigningManager))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Proofreaded;
+                        break;
+                    case NewsMaterialStatus.Designed:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.PublishingManager))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Proofreaded;
+                        break;
+                    case NewsMaterialStatus.AssignedForPublishing:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.Publisher) && !User.HasRole(NewsUserRole.PublishingManager))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Reported;
+                        break;
+                    case NewsMaterialStatus.WaitingPublisherConfirmation:
+                        if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.Reviewer))
+                            return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+                        status = NewsMaterialStatus.Reported;
+                        break;
+                    case NewsMaterialStatus.Draft:
+                        return Done<bool>("This report is still a draft", ResponseCode.BadRequest);
+                    case NewsMaterialStatus.Reported:
+                        return Done<bool>("This report is still in its first stage", ResponseCode.BadRequest);
+                    case NewsMaterialStatus.Published:
+                        return Done<bool>("This report has been published", ResponseCode.BadRequest);
+                    default:
+                        return Done<bool>("Bad request!", ResponseCode.BadRequest);
+                }
+                await newsDbContext.NewsMaterials.Where(x => x.ID == materialId)
+                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentStatus, status)
+                                              .SetProperty(x => x.CurrentUserID, x => null));
+                await newsDbContext.CreateNewsMaterialHistory(materialId, status, User.Identity!.Name!, null);
+                await newsDbContext.CreateNewMaterialLog(materialId, User.Identity.Name!, note);
+                return Done(true);
+            }
+            catch (Exception ex)
+            {
+                return Done<bool>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
     }
 }
