@@ -35,7 +35,6 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-
                 var allowedStatuses = User.GetAllowedStatuses();
                 if (statuses?.Except(allowedStatuses) is IEnumerable<NewsMaterialStatus> forbiddenStatuses && forbiddenStatuses.Any())
                     return Done<PagingVM<NewsMaterialLiteVM>>($"You don't have permission to view these statuses \"{string.Join(", ", forbiddenStatuses)}\"", ResponseCode.Unauthorized);
