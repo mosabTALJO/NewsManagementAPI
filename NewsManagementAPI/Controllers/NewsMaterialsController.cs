@@ -306,24 +306,21 @@ namespace NewsManagementAPI.Controllers
                 StringBuilder sb = new();
                 if (!string.IsNullOrEmpty(newsMaterial.FinalContent) && newsMaterial.FinalContent != editedVM.FinalContent)
                     sb.AppendLine($"Final content changed from: {newsMaterial.FinalContent}, To: {editedVM.FinalContent}");
-                if (!editedVM.Done)
-                {
-                    newsMaterial.CurrentStatus = NewsMaterialStatus.Reviewed;
-                    await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Edited, User.Identity!.Name!, null);
-                }
-                else if (editedVM.SkipProofreading)
+                if (!string.IsNullOrEmpty(newsMaterial.EditorNote) && newsMaterial.EditorNote != editedVM.EditorNote)
+                    sb.AppendLine($"Editor note changed from: {newsMaterial.EditorNote}, To: {editedVM.EditorNote}");
+                if (editedVM.SkipProofreading)
                 {
                     if (await newsDbContext.UserClaims.AnyAsync(x => x.UserId == User.Identity!.Name && x.ClaimValue == NewsUserRole.Proofreader.GetPolicyNumber()) == false)
                         return Done<bool>("You don't have proofreading permission!", ResponseCode.Unauthorized);
                     newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
                     await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Proofreaded, User.Identity!.Name!, null);
                 }
-                else
+                else if (!editedVM.SaveOnly)
                 {
+                    newsMaterial.CurrentUserID = null;
                     newsMaterial.CurrentStatus = NewsMaterialStatus.Edited;
                     await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Edited, User.Identity!.Name!, null);
                 }
-                newsMaterial.CurrentUserID = null;
                 newsMaterial.EditorNote = editedVM.EditorNote;
                 newsMaterial.FinalContent = editedVM.FinalContent;
                 newsDbContext.NewsMaterials.Update(newsMaterial);
@@ -384,17 +381,12 @@ namespace NewsManagementAPI.Controllers
                 StringBuilder sb = new();
                 if (!string.IsNullOrEmpty(newsMaterial.FinalAttachments) && newsMaterial.FinalAttachments != designedVM.FinalAttachments)
                     sb.AppendLine($"Final attachments changed from: {newsMaterial.FinalAttachments}, To: {designedVM.FinalAttachments}");
-                //if (designedVM.Done)
-                //{
-                newsMaterial.CurrentStatus = NewsMaterialStatus.Designed;
-                await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Designed, User.Identity!.Name!, null);
-                //}
-                //else
-                //{
-                //    newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
-                //    await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Designed, User.Identity!.Name!, null);
-                //}
-                newsMaterial.CurrentUserID = null;
+                if (!designedVM.SaveOnly)
+                {
+                    newsMaterial.CurrentStatus = NewsMaterialStatus.Designed;
+                    await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Designed, User.Identity!.Name!, null);
+                    newsMaterial.CurrentUserID = null;
+                }
                 newsMaterial.FinalAttachments = designedVM.FinalAttachments;
                 newsDbContext.NewsMaterials.Update(newsMaterial);
 
