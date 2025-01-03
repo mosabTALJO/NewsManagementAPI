@@ -60,6 +60,7 @@ namespace NewsManagementAPI.Extentions
                 ExtremelyUrgent = x.ExtremelyUrgent,
                 ContentRequiresConfirmation = x.ContentRequiresConfirmation,
                 DeadLine = x.DeadLine,
+                Images = x.Images,
                 CurrentUser = x.CurrentUser == null ? null : new() { DisplayName = x.CurrentUser.DisplayName, Id = x.CurrentUserID! }
             });
         }
