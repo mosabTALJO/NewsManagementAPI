@@ -47,6 +47,22 @@ namespace NewsManagementAPI.Extentions
                 CurrentUser = x.CurrentUser == null ? null : new() { DisplayName = x.CurrentUser.DisplayName, Id = x.CurrentUserID! }
             });
         }
+        public static IQueryable<NewsMaterialLiteVM> ToNewsMaterialLiteVM(this IQueryable<NewsMaterial> source)
+        {
+            return source.Select(x => new NewsMaterialLiteVM
+            {
+                ID = x.ID,
+                Content = x.Content,
+                CurrentStatus = x.CurrentStatus,
+                Priority = x.Priority,
+                ReportedDate = x.ReportedDate,
+                Urgency = x.Urgency,
+                ExtremelyUrgent = x.ExtremelyUrgent,
+                ContentRequiresConfirmation = x.ContentRequiresConfirmation,
+                DeadLine = x.DeadLine,
+                CurrentUser = x.CurrentUser == null ? null : new() { DisplayName = x.CurrentUser.DisplayName, Id = x.CurrentUserID! }
+            });
+        }
         public static IQueryable<NewsUserVM> ToNewsUserVM(this IQueryable<NewsUser> source, IQueryable<IdentityUserClaim<string>> claims)
         {
             return source.GroupJoin(claims, x => x.Id, x => x.UserId, (user, cs) => new NewsUserVM

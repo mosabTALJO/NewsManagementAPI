@@ -7,6 +7,7 @@ using NewsManagementAPI.Extentions;
 using NewsManagementAPI.Helpers;
 using NewsManagementAPI.Models;
 using NewsManagementAPI.Services;
+using NewsManagementAPI.ViewModels;
 using NewsManagementAPI.ViewModels.NewsMaterialVMs;
 using System;
 using System.Text;
@@ -23,7 +24,7 @@ namespace NewsManagementAPI.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<ActionResult<ApiResponse<NewsMaterialVM[]>>> Get(
+        public async Task<ActionResult<ApiResponse<PagingVM<NewsMaterialLiteVM>>>> Get(
             int pageNo = 1, int pageSize = 20,
             bool? requiresConfirmation = null,
             [ModelBinder(BinderType = typeof(CommaSeparatedEnumModelBinder<NewsMaterialStatus>))] List<NewsMaterialStatus>? statuses = null,//accepts statuses=1,4,3 etc...
@@ -32,28 +33,36 @@ namespace NewsManagementAPI.Controllers
             DateTime? reportedBefore = null,
             string? userId = null)
         {
-            var allowedStatuses = User.GetAllowedStatuses();
-            if (statuses?.Except(allowedStatuses) is IEnumerable<NewsMaterialStatus> forbiddenStatuses && forbiddenStatuses.Any())
-                return Done<NewsMaterialVM[]>($"You don't have permission to view these statuses \"{string.Join(", ", forbiddenStatuses)}\"", ResponseCode.Unauthorized);
-            statuses ??= allowedStatuses;
-            var newsMaterialsSql = newsDbContext.NewsMaterials.AsQueryable();
-            if (statuses != null)
-                newsMaterialsSql = newsMaterialsSql.Where(x => statuses.Contains(x.CurrentStatus));
-            if (requiresConfirmation != null)
-                newsMaterialsSql = newsMaterialsSql.Where(x => x.ContentRequiresConfirmation == requiresConfirmation);
-            if (reportedAfter != null)
-                newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate >= reportedAfter);
-            if (reportedBefore != null)
-                newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate <= reportedBefore);
-            if (!string.IsNullOrEmpty(userId))
-                newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == userId);
+            try
+            {
 
-            var newsMaterials = await newsMaterialsSql.ToNewsMaterialVM()
-                .OrderByDescending(x => x.Urgency).ThenByDescending(x => x.Priority)
-                .SkipTake(pageNo, pageSize)
-                .ToArrayAsync();
+                var allowedStatuses = User.GetAllowedStatuses();
+                if (statuses?.Except(allowedStatuses) is IEnumerable<NewsMaterialStatus> forbiddenStatuses && forbiddenStatuses.Any())
+                    return Done<PagingVM<NewsMaterialLiteVM>>($"You don't have permission to view these statuses \"{string.Join(", ", forbiddenStatuses)}\"", ResponseCode.Unauthorized);
+                statuses ??= allowedStatuses;
+                var newsMaterialsSql = newsDbContext.NewsMaterials.AsQueryable();
+                if (statuses != null)
+                    newsMaterialsSql = newsMaterialsSql.Where(x => statuses.Contains(x.CurrentStatus));
+                if (requiresConfirmation != null)
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.ContentRequiresConfirmation == requiresConfirmation);
+                if (reportedAfter != null)
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate >= reportedAfter);
+                if (reportedBefore != null)
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate <= reportedBefore);
+                if (!string.IsNullOrEmpty(userId))
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == userId);
 
-            return Done(newsMaterials);
+                var newsMaterials = await newsMaterialsSql.ToNewsMaterialLiteVM()
+                    .OrderByDescending(x => x.Urgency).ThenByDescending(x => x.Priority)
+                    .SkipTake(pageNo, pageSize)
+                    .ToArrayAsync();
+
+                return Done(new PagingVM<NewsMaterialLiteVM> { Count = await newsMaterialsSql.CountAsync(), Items = newsMaterials });
+            }
+            catch (Exception ex)
+            {
+                return Done<PagingVM<NewsMaterialLiteVM>>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
         }
 
         [HttpGet("{id}")]
