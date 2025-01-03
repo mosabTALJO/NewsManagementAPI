@@ -44,5 +44,27 @@ namespace NewsManagementAPI.Controllers
                 return Done(Ids);
             return Done<string[]>("Error while uploading files", ResponseCode.BadRequest);
         }
+
+        [AllowAnonymous]
+        [HttpGet("{image}")]
+        public IActionResult DownloadImage(string image = "")
+        {
+            if (string.IsNullOrEmpty(image))
+                return BadRequest();
+
+            var physicalPath = fileService.GetFilePath(image);
+            return new PhysicalFileResult(physicalPath, "image/jpeg");
+        }
+
+        [AllowAnonymous]
+        [HttpGet("PreviewImage/{image}")]
+        public IActionResult PreviewImage(string image = "", int w = 150, int? h = null, bool crop = true)
+        {
+            if (string.IsNullOrEmpty(image))
+                return BadRequest();
+
+            var physicalPath = h is null ? fileService.GetFilePath(image, w, crop) : fileService.GetFilePath(image, w, h ?? 150, crop);
+            return new PhysicalFileResult(physicalPath, "image/jpeg");
+        }
     }
 }

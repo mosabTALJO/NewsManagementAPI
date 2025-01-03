@@ -52,6 +52,23 @@ namespace NewsManagementAPI.Controllers
             }
         }
 
+        [HttpGet("{id}")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<NewsUserVM>>> Get(string id)
+        {
+            try
+            {
+                var userVMs = await userManager.Users.Where(x => x.Id == id).ToNewsUserVMsAsync(newsDbContext.UserClaims.Where(x => x.ClaimType == ClaimTypes.Role));
+                if (userVMs.Length == 0)
+                    return Done<NewsUserVM>("Not found", ResponseCode.NotFound);
+                return Done(userVMs[0]);
+            }
+            catch (Exception ex)
+            {
+                return Done<NewsUserVM>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
         [Authorize(Policy = UserRoleNames.Admin)]
         [HttpPost("CreateUser")]
         public async Task<ActionResult<ApiResponse<string>>> CreateUser(CreateUserVM userVM)

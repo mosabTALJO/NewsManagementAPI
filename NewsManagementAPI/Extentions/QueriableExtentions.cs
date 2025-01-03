@@ -60,7 +60,7 @@ namespace NewsManagementAPI.Extentions
                 Roles = cs.Select(x => Enum.Parse<NewsUserRole>(x.ClaimValue!)).ToList()
             }).Where(x => x.Roles.Any());
         }
-        public static async Task<NewsUserVM[]> ToNewsUserVMsAsync(this IQueryable<NewsUser> source, IQueryable<IdentityUserClaim<string>> claims, int pageNo, int pageSize)
+        public static async Task<NewsUserVM[]> ToNewsUserVMsAsync(this IQueryable<NewsUser> source, IQueryable<IdentityUserClaim<string>> claims, int? pageNo = null, int? pageSize = null)
         {
             var q = from u in source
                     from c in claims.Where(x => x.UserId == u.Id)
@@ -74,7 +74,9 @@ namespace NewsManagementAPI.Extentions
                         u.UserType,
                         c.ClaimValue
                     };
-            var data = await q.SkipTake(pageNo, pageSize).ToArrayAsync();
+            if (pageNo != null && pageSize != null)
+                q = q.SkipTake(pageNo.Value, pageSize.Value);
+            var data = await q.ToArrayAsync();
             return data.GroupBy(x => x.Id).Select(x => new NewsUserVM
             {
                 Id = x.Key,
