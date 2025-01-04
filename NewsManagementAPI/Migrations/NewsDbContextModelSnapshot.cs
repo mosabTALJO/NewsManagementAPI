@@ -387,6 +387,9 @@ namespace NewsManagementAPI.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("ReporterType")
+                        .HasColumnType("integer");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
@@ -396,9 +399,6 @@ namespace NewsManagementAPI.Migrations
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
-
-                    b.Property<int>("UserType")
-                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

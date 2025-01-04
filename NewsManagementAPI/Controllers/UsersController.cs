@@ -104,6 +104,7 @@ namespace NewsManagementAPI.Controllers
                 user.Email = userVM.Email;
                 user.UserName = userVM.DisplayName;
                 user.DisplayName = userVM.DisplayName;
+                user.Image = userVM.Image;
                 user.ReporterType = userVM.UserType;
                 if (!string.IsNullOrEmpty(userVM.NewPassword) && !string.IsNullOrEmpty(userVM.OldPassword) && userVM.NewPassword != userVM.OldPassword)
                 {
