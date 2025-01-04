@@ -44,7 +44,12 @@ namespace NewsManagementAPI.Extentions
                     NewsMaterialID = h.NewsMaterialID,
                     Status = h.Status,
                 }).ToList(),
-                CurrentUser = x.CurrentUser == null ? null : new() { DisplayName = x.CurrentUser.DisplayName, Id = x.CurrentUserID! }
+                CurrentUser = x.CurrentUser == null ? null : new()
+                {
+                    DisplayName = x.CurrentUser.DisplayName,
+                    Id = x.CurrentUserID!,
+                    ReporterType = x.CurrentUser.ReporterType,
+                }
             });
         }
         public static IQueryable<NewsMaterialLiteVM> ToNewsMaterialLiteVM(this IQueryable<NewsMaterial> source)
