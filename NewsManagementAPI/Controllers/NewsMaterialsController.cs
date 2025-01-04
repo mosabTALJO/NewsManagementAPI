@@ -113,8 +113,10 @@ namespace NewsManagementAPI.Controllers
                     Urgency = reportedNews.Urgency,
                     Type = reportedNews.Type,
                     ExtremelyUrgent = reportedNews.ExtremelyUrgent,
+                    NewsRegion = reportedNews.NewsRegion,
                     CurrentUserID = User.Identity!.Name,
                     CurrentStatus = NewsMaterialStatus.Reported,
+                    ReportedDate = DateTime.UtcNow,
                     Histories = [new()
                     {
                         NewsUserID = User.Identity.Name!,

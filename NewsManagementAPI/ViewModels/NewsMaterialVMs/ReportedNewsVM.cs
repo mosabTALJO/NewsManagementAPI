@@ -8,6 +8,7 @@ namespace NewsManagementAPI.ViewModels.NewsMaterialVMs
         public NewsMaterialType Type { get; set; }
         public Priority Priority { get; set; }
         public Urgency Urgency { get; set; }
+        public NewsRegion NewsRegion { get; set; }
         public string? Attachments { get; set; }
         public string? Images { get; set; }
         public bool ExtremelyUrgent { get; set; }
