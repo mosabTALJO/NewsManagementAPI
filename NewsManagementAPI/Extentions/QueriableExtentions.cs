@@ -78,7 +78,7 @@ namespace NewsManagementAPI.Extentions
                 Email = user.Email!,
                 Image = user.Image,
                 PhoneNumber = user.PhoneNumber,
-                UserType = user.ReporterType,
+                ReporterType = user.ReporterType,
                 Roles = cs.Select(x => Enum.Parse<NewsUserRole>(x.ClaimValue!)).ToList()
             }).Where(x => x.Roles.Any());
         }
@@ -106,7 +106,7 @@ namespace NewsManagementAPI.Extentions
                 Email = x.First().Email!,
                 Image = x.First().Image,
                 PhoneNumber = x.First().PhoneNumber,
-                UserType = x.First().UserType,
+                ReporterType = x.First().ReporterType,
                 Roles = x.Select(x => Enum.Parse<NewsUserRole>(x.ClaimValue!)).ToList()
             }).ToArray();
         }
