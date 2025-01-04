@@ -31,6 +31,11 @@ namespace NewsManagementAPI.Controllers
                                                                                                                                             //string? statuses = null,//comma seperated
             DateTime? reportedAfter = null,
             DateTime? reportedBefore = null,
+            Priority? priority = null,
+            Urgency? urgency = null,
+            ReporterType? reporterType = null,
+            NewsRegion? newsRegion = null,
+            bool? extremelyUrgent = null,
             string? userId = null)
         {
             try
@@ -50,9 +55,19 @@ namespace NewsManagementAPI.Controllers
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate <= reportedBefore);
                 if (!string.IsNullOrEmpty(userId))
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == userId);
+                if (priority != null)
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.Priority == priority);
+                if (urgency != null)
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.Urgency == urgency);
+                if (extremelyUrgent != null)
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.ExtremelyUrgent == extremelyUrgent);
+                if (reporterType != null)
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUser!.ReporterType == reporterType);
+                if (newsRegion != null)
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.NewsRegion == newsRegion);
 
                 var newsMaterials = await newsMaterialsSql.ToNewsMaterialLiteVM()
-                    .OrderByDescending(x => x.Urgency).ThenByDescending(x => x.Priority)
+                    .OrderByDescending(x => x.ExtremelyUrgent).ThenByDescending(x => x.Urgency).ThenByDescending(x => x.Priority)
                     .SkipTake(pageNo, pageSize)
                     .ToArrayAsync();
 

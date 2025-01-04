@@ -88,8 +88,8 @@ try
                 {
                     Reference = new OpenApiReference
                     {
-                        Type=ReferenceType.SecurityScheme,
-                        Id="Bearer"
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
                     }
                 },
                 Array.Empty<string>()
@@ -104,8 +104,7 @@ try
             builder.WithOrigins("*",
                 "https://localhost:7190",
                 "http://localhost:5125",
-                "https://cp-ecommerce.usos.co",
-                "https://Ecommerce.usos.co",
+                "https://news-api.usos.co.usos.co",
                 "http://localhost:5173")
                    .AllowAnyMethod()
                    .AllowAnyHeader()

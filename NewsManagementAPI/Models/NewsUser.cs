@@ -6,9 +6,9 @@ namespace NewsManagementAPI.Models
     {
         public required string DisplayName { get; set; }
         public string? Image { get; set; }
-        public NewsUserType UserType { get; set; }
+        public ReporterType ReporterType { get; set; }
     }
-    public enum NewsUserType
+    public enum ReporterType
     {
         Observer = 0,
         Reporter = 1,

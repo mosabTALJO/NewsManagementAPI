@@ -29,7 +29,7 @@ namespace NewsManagementAPI.Helpers
                 Email = userVM.Email,
                 Image = userVM.Image,
                 PhoneNumber = userVM.PhoneNumber,
-                UserType = userVM.UserType,
+                ReporterType = userVM.UserType,
             };
             var result = await userManager.CreateAsync(newsUser, userVM.Password);
             if (result.Succeeded)

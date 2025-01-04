@@ -104,7 +104,7 @@ namespace NewsManagementAPI.Controllers
                 user.Email = userVM.Email;
                 user.UserName = userVM.DisplayName;
                 user.DisplayName = userVM.DisplayName;
-                user.UserType = userVM.UserType;
+                user.ReporterType = userVM.UserType;
                 if (!string.IsNullOrEmpty(userVM.NewPassword) && !string.IsNullOrEmpty(userVM.OldPassword) && userVM.NewPassword != userVM.OldPassword)
                 {
                     var changePass = await userManager.ChangePasswordAsync(user, userVM.OldPassword, userVM.NewPassword);

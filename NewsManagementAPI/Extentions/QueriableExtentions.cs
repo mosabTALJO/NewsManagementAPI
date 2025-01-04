@@ -61,7 +61,12 @@ namespace NewsManagementAPI.Extentions
                 ContentRequiresConfirmation = x.ContentRequiresConfirmation,
                 DeadLine = x.DeadLine,
                 Images = x.Images,
-                CurrentUser = x.CurrentUser == null ? null : new() { DisplayName = x.CurrentUser.DisplayName, Id = x.CurrentUserID! }
+                CurrentUser = x.CurrentUser == null ? null : new()
+                {
+                    DisplayName = x.CurrentUser.DisplayName,
+                    Id = x.CurrentUserID!,
+                    ReporterType = x.CurrentUser.ReporterType
+                }
             });
         }
         public static IQueryable<NewsUserVM> ToNewsUserVM(this IQueryable<NewsUser> source, IQueryable<IdentityUserClaim<string>> claims)
@@ -73,7 +78,7 @@ namespace NewsManagementAPI.Extentions
                 Email = user.Email!,
                 Image = user.Image,
                 PhoneNumber = user.PhoneNumber,
-                UserType = user.UserType,
+                UserType = user.ReporterType,
                 Roles = cs.Select(x => Enum.Parse<NewsUserRole>(x.ClaimValue!)).ToList()
             }).Where(x => x.Roles.Any());
         }
@@ -88,7 +93,7 @@ namespace NewsManagementAPI.Extentions
                         u.Email,
                         u.Image,
                         u.PhoneNumber,
-                        u.UserType,
+                        u.ReporterType,
                         c.ClaimValue
                     };
             if (pageNo != null && pageSize != null)
