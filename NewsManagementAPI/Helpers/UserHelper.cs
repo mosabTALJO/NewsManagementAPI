@@ -51,11 +51,11 @@ namespace NewsManagementAPI.Helpers
             { NewsUserRole.Editor, [NewsMaterialStatus.AssignedForEditing, NewsMaterialStatus.Editing] },
             { NewsUserRole.EditingManager, [NewsMaterialStatus.Reviewed, NewsMaterialStatus.AssignedForEditing, NewsMaterialStatus.Editing] },
             { NewsUserRole.Proofreader, [NewsMaterialStatus.AssignedForProofreading, NewsMaterialStatus.Proofreading] },
-            { NewsUserRole.ProofreadingManager, [NewsMaterialStatus.AssignedForEditing, NewsMaterialStatus.Editing, NewsMaterialStatus.Edited] },
+            { NewsUserRole.ProofreadingManager, [NewsMaterialStatus.Edited, NewsMaterialStatus.AssignedForProofreading, NewsMaterialStatus.Proofreading] },
             { NewsUserRole.Designer, [NewsMaterialStatus.AssignedForDesigning, NewsMaterialStatus.Designing] },
-            { NewsUserRole.DesigningManager, [NewsMaterialStatus.AssignedForDesigning, NewsMaterialStatus.Designing, NewsMaterialStatus.Proofreaded] },
+            { NewsUserRole.DesigningManager, [NewsMaterialStatus.Proofreaded, NewsMaterialStatus.AssignedForDesigning, NewsMaterialStatus.Designing] },
             { NewsUserRole.Publisher, [NewsMaterialStatus.AssignedForPublishing] },
-            { NewsUserRole.PublishingManager, [NewsMaterialStatus.AssignedForPublishing, NewsMaterialStatus.Designed, NewsMaterialStatus.WaitingPublisherConfirmation] },
+            { NewsUserRole.PublishingManager, [NewsMaterialStatus.Designed, NewsMaterialStatus.AssignedForPublishing, NewsMaterialStatus.WaitingPublisherConfirmation] },
         };
     }
 }
