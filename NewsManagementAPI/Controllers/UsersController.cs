@@ -102,10 +102,10 @@ namespace NewsManagementAPI.Controllers
                     return Done<bool>("Display name is missing!", ResponseCode.BadRequest);
                 user.PhoneNumber = userVM.PhoneNumber;
                 user.Email = userVM.Email;
-                user.UserName = userVM.DisplayName;
+                user.UserName = userVM.Email;
                 user.DisplayName = userVM.DisplayName;
                 user.Image = userVM.Image;
-                user.ReporterType = userVM.UserType;
+                user.ReporterType = userVM.ReporterType;
                 if (!string.IsNullOrEmpty(userVM.NewPassword) && !string.IsNullOrEmpty(userVM.OldPassword) && userVM.NewPassword != userVM.OldPassword)
                 {
                     var changePass = await userManager.ChangePasswordAsync(user, userVM.OldPassword, userVM.NewPassword);

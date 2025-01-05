@@ -11,7 +11,7 @@ namespace NewsManagementAPI.ViewModels.UserVMs
         public string? NewPassword { get; set; }
         public string? PhoneNumber { get; set; }
         public string? Image { get; set; }
-        public ReporterType UserType { get; set; }
+        public ReporterType ReporterType { get; set; }
         public List<NewsUserRole> Roles { get; set; } = [];
     }
 }

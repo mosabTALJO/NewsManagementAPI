@@ -9,13 +9,13 @@ namespace NewsManagementAPI.Helpers
 {
     public static class UserHelper
     {
-        public static async Task<(NewsUser? User, string? Error)> CreateAdminUser(string email, string username, string password, UserManager<NewsUser> userManager)
+        public static async Task<(NewsUser? User, string? Error)> CreateAdminUser(string email, string displayName, string password, UserManager<NewsUser> userManager)
         {
             CreateUserVM userVM = new()
             {
                 Email = email,
                 Password = password,
-                DisplayName = username,
+                DisplayName = displayName,
                 Roles = [NewsUserRole.Admin]
             };
             return await CreateAdminUser(userVM, userManager);
@@ -25,11 +25,11 @@ namespace NewsManagementAPI.Helpers
             NewsUser newsUser = new()
             {
                 DisplayName = userVM.DisplayName,
-                UserName = userVM.DisplayName,
+                UserName = userVM.Email,
                 Email = userVM.Email,
                 Image = userVM.Image,
                 PhoneNumber = userVM.PhoneNumber,
-                ReporterType = userVM.UserType,
+                ReporterType = userVM.ReporterType,
             };
             var result = await userManager.CreateAsync(newsUser, userVM.Password);
             if (result.Succeeded)

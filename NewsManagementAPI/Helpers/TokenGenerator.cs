@@ -31,7 +31,7 @@ namespace NewsManagementAPI.Helpers
                 UserID = user.Id,
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
                 Expiration = token.ValidTo,
-                UserName = user.UserName,
+                UserName = user.Email,
                 DisplayName = user.DisplayName,
                 Roles = claims.Where(x => x.Type == ClaimTypes.Role).Select(x => Enum.Parse<NewsUserRole>(x.Value)).ToList()
             };
