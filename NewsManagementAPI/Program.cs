@@ -105,6 +105,7 @@ try
                 "https://localhost:7190",
                 "http://localhost:5125",
                 "https://news-api.usos.co.usos.co",
+                "https://news.usos.co",
                 "http://localhost:5173")
                    .AllowAnyMethod()
                    .AllowAnyHeader()
