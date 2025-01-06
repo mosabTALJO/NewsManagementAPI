@@ -87,33 +87,37 @@ namespace NewsManagementAPI.Extentions
                 Roles = cs.Select(x => Enum.Parse<NewsUserRole>(x.ClaimValue!)).ToList()
             }).Where(x => x.Roles.Any());
         }
-        public static async Task<NewsUserVM[]> ToNewsUserVMsAsync(this IQueryable<NewsUser> source, IQueryable<IdentityUserClaim<string>> claims, int? pageNo = null, int? pageSize = null)
+        public static IQueryable<NewsUserVM> ToNewsUserVMs(this IQueryable<NewsUser> source, IQueryable<IdentityUserClaim<string>> claims)
         {
             var q = from u in source
                     from c in claims.Where(x => x.UserId == u.Id)
                     select new
                     {
-                        u.Id,
-                        u.DisplayName,
-                        u.Email,
-                        u.Image,
-                        u.PhoneNumber,
-                        u.ReporterType,
+                        User = new
+                        {
+                            u.Id,
+                            u.DisplayName,
+                            u.Email,
+                            u.Image,
+                            u.PhoneNumber,
+                            u.ReporterType,
+                        },
                         c.ClaimValue
                     };
-            if (pageNo != null && pageSize != null)
-                q = q.SkipTake(pageNo.Value, pageSize.Value);
-            var data = await q.ToArrayAsync();
-            return data.GroupBy(x => x.Id).Select(x => new NewsUserVM
-            {
-                Id = x.Key,
-                DisplayName = x.First().DisplayName,
-                Email = x.First().Email!,
-                Image = x.First().Image,
-                PhoneNumber = x.First().PhoneNumber,
-                ReporterType = x.First().ReporterType,
-                Roles = x.Select(x => Enum.Parse<NewsUserRole>(x.ClaimValue!)).ToList()
-            }).ToArray();
+            var groupedResult = q
+                .GroupBy(x => x.User)
+                .Select(g => new NewsUserVM
+                {
+                    Id = g.Key.Id,
+                    DisplayName = g.Key.DisplayName,
+                    Email = g.Key.Email,
+                    Image = g.Key.Image,
+                    PhoneNumber = g.Key.PhoneNumber,
+                    ReporterType = g.Key.ReporterType,
+                    Roles = g.Select(x => Enum.Parse<NewsUserRole>(x.ClaimValue!)).ToList()
+                });
+            var s = groupedResult.ToQueryString();
+            return groupedResult;
         }
     }
 }

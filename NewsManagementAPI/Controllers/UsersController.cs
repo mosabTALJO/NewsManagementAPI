@@ -24,7 +24,7 @@ namespace NewsManagementAPI.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<ActionResult<ApiResponse<NewsUserVM[]>>> Get(
+        public async Task<ActionResult<ApiResponse<PagingVM<NewsUserVM>>>> Get(
             int pageNo = 1,
             int pageSize = 20,
             string? search = null,
@@ -33,7 +33,7 @@ namespace NewsManagementAPI.Controllers
             try
             {
                 if ((roles == null || roles.Length > 1) && !User.HasRole(NewsUserRole.Admin))
-                    return Done<NewsUserVM[]>("You're not an admin!", ResponseCode.Unauthorized);
+                    return Done<PagingVM<NewsUserVM>>("You're not an admin!", ResponseCode.Unauthorized);
                 var q = userManager.Users.AsQueryable();
                 if (!string.IsNullOrEmpty(search))
                     q = q.Where(x => x.DisplayName == search || x.Email == search);
@@ -43,12 +43,14 @@ namespace NewsManagementAPI.Controllers
                     var rolesArray = roles.Split(',');
                     claimsQuery = claimsQuery.Where(x => rolesArray.Contains(x.ClaimValue));
                 }
-                var userVMs = await q.OrderBy(x => x.DisplayName).ToNewsUserVMsAsync(claimsQuery, pageNo, pageSize);
-                return Done(userVMs);
+                q = q.OrderBy(x => x.DisplayName);
+                var userVMsQuery = q.ToNewsUserVMs(claimsQuery);
+                var userVMs = await userVMsQuery.SkipTake(pageNo, pageSize).ToArrayAsync();
+                return Done(new PagingVM<NewsUserVM> { Items = userVMs, Count = await userVMsQuery.CountAsync() });
             }
             catch (Exception ex)
             {
-                return Done<NewsUserVM[]>(ex.AllMessages(), ResponseCode.BadRequest);
+                return Done<PagingVM<NewsUserVM>>(ex.AllMessages(), ResponseCode.BadRequest);
             }
         }
 
@@ -58,10 +60,10 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                var userVMs = await userManager.Users.Where(x => x.Id == id).ToNewsUserVMsAsync(newsDbContext.UserClaims.Where(x => x.ClaimType == ClaimTypes.Role));
-                if (userVMs.Length == 0)
+                var userVM = await userManager.Users.Where(x => x.Id == id).ToNewsUserVMs(newsDbContext.UserClaims.Where(x => x.ClaimType == ClaimTypes.Role)).FirstOrDefaultAsync();
+                if (userVM == null)
                     return Done<NewsUserVM>("Not found", ResponseCode.NotFound);
-                return Done(userVMs[0]);
+                return Done(userVM);
             }
             catch (Exception ex)
             {
