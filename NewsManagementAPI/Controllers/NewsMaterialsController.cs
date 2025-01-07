@@ -99,7 +99,7 @@ namespace NewsManagementAPI.Controllers
         }
 
         [HttpGet("Details/{id}")]
-        [Authorize]
+        [Authorize(Policy = UserRoleNames.Admin)]
         public async Task<ActionResult<ApiResponse<NewsMaterialDetailsVM>>> GetDetails(int id)
         {
             try
@@ -175,20 +175,22 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
+                if (reviewedVM.PublishingStrategies.Count == 0)
+                    return Done<bool>("Please select a publishing strategy(s)!", ResponseCode.BadRequest);
                 var newsMaterial = await newsDbContext.NewsMaterials.AsNoTracking().FirstOrDefaultAsync(x => x.ID == reviewedVM.ID);
                 if (newsMaterial == null)
                     return Done<bool>("Not found!", ResponseCode.NotFound);
                 StringBuilder sb = new();
                 if (newsMaterial.Content != reviewedVM.Content)
-                    sb.AppendLine($"Content changed from: {newsMaterial.Content}, To: {reviewedVM.Content}");
+                    sb.AppendLine($"تم تعديل المحتوى من: \"{newsMaterial.Content}\" إلى: \"{reviewedVM.Content}\"");
                 if (newsMaterial.Priority != reviewedVM.Priority)
-                    sb.AppendLine($"Priority changed from: {newsMaterial.Priority}, To: {reviewedVM.Priority}");
+                    sb.AppendLine($"تم تعديل الأهمية من: \"{newsMaterial.Priority}\", إلى: \"{reviewedVM.Priority}\"");
                 if (newsMaterial.Urgency != reviewedVM.Urgency)
-                    sb.AppendLine($"Urgency changed from: {newsMaterial.Urgency}, To: {reviewedVM.Urgency}");
+                    sb.AppendLine($"تم تعديل العجلة من: \"{newsMaterial.Urgency}\", إلى: \"{reviewedVM.Urgency}\"");
                 if (newsMaterial.ExtremelyUrgent != reviewedVM.ExtremelyUrgent)
-                    sb.AppendLine($"\"Extremely Urgent\" changed from: {newsMaterial.ExtremelyUrgent}, To: {reviewedVM.ExtremelyUrgent}");
+                    sb.AppendLine($"تم تعديل مستعجل جدا من: \"{newsMaterial.ExtremelyUrgent}\", إلى: \"{reviewedVM.ExtremelyUrgent}\"");
                 if (newsMaterial.ContentRequiresConfirmation != reviewedVM.ContentRequiresConfirmation)
-                    sb.AppendLine($"\"Content Requires Confirmation\" changed from: {newsMaterial.ContentRequiresConfirmation}, To: {reviewedVM.ContentRequiresConfirmation}");
+                    sb.AppendLine($"تم تعديل المحتوى يحتاج الموافقة من: \"{newsMaterial.ContentRequiresConfirmation}\", إلى: \"{reviewedVM.ContentRequiresConfirmation}\"");
                 if (newsMaterial.ContentRequiresConfirmation)
                     newsMaterial.CurrentStatus = NewsMaterialStatus.WaitingPublisherConfirmation;
                 else if (reviewedVM.ExtremelyUrgent)
@@ -341,17 +343,21 @@ namespace NewsManagementAPI.Controllers
                     return Done<bool>("Not found!", ResponseCode.NotFound);
                 StringBuilder sb = new();
                 if (!string.IsNullOrEmpty(newsMaterial.FinalContent) && newsMaterial.FinalContent != editedVM.FinalContent)
-                    sb.AppendLine($"Final content changed from: {newsMaterial.FinalContent}, To: {editedVM.FinalContent}");
+                    sb.AppendLine($"تم تعديل المحتوى النهائي من: {newsMaterial.FinalContent}, إلى: {editedVM.FinalContent}");
                 if (!string.IsNullOrEmpty(newsMaterial.EditorNote) && newsMaterial.EditorNote != editedVM.EditorNote)
-                    sb.AppendLine($"Editor note changed from: {newsMaterial.EditorNote}, To: {editedVM.EditorNote}");
-                if (editedVM.SkipProofreading)
+                    sb.AppendLine($"تم تعديل ملاحظة المحرر من: {newsMaterial.EditorNote}, إلى: {editedVM.EditorNote}");
+                if (editedVM.SaveOnly)
+                {
+
+                }
+                else if (editedVM.SkipProofreading)
                 {
                     if (await newsDbContext.UserClaims.AnyAsync(x => x.UserId == User.Identity!.Name && x.ClaimValue == NewsUserRole.Proofreader.GetPolicyNumber()) == false)
                         return Done<bool>("You don't have proofreading permission!", ResponseCode.Unauthorized);
                     newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
                     await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, NewsMaterialStatus.Proofreaded, User.Identity!.Name!, null);
                 }
-                else if (!editedVM.SaveOnly)
+                else
                 {
                     newsMaterial.CurrentUserID = null;
                     newsMaterial.CurrentStatus = NewsMaterialStatus.Edited;
@@ -359,6 +365,15 @@ namespace NewsManagementAPI.Controllers
                 }
                 newsMaterial.EditorNote = editedVM.EditorNote;
                 newsMaterial.FinalContent = editedVM.FinalContent;
+                newsMaterial.SendToDesigner = editedVM.SendToDesigner;
+                if (newsMaterial.PublishingStrategies.Count == 1)
+                    newsMaterial.FinalPublishingStrategy = newsMaterial.PublishingStrategies[0].PublishingStrategy;
+                else
+                {
+                    if (editedVM.PublishingStrategy == null)
+                        return Done<bool>("Please select a publishing strategy!", ResponseCode.BadRequest);
+                    newsMaterial.FinalPublishingStrategy = editedVM.PublishingStrategy.Value;
+                }
                 newsDbContext.NewsMaterials.Update(newsMaterial);
 
                 if (sb.Length > 0)
@@ -383,10 +398,10 @@ namespace NewsManagementAPI.Controllers
                     return Done<bool>("Not found!", ResponseCode.NotFound);
                 StringBuilder sb = new();
                 if (newsMaterial.FinalContent != proofreadedVM.FinalContent)
-                    sb.AppendLine($"Final content changed from: {newsMaterial.FinalContent}, To: {proofreadedVM.FinalContent}");
+                    sb.AppendLine($"تم تعديل المحتوى النهائي من: {newsMaterial.FinalContent}, إلى: {proofreadedVM.FinalContent}");
 
                 newsMaterial.CurrentUserID = null;
-                if (newsMaterial.ExtremelyUrgent)
+                if (newsMaterial.ExtremelyUrgent || !newsMaterial.SendToDesigner)
                     newsMaterial.CurrentStatus = NewsMaterialStatus.Designed;
                 else
                     newsMaterial.CurrentStatus = NewsMaterialStatus.Proofreaded;
@@ -416,7 +431,7 @@ namespace NewsManagementAPI.Controllers
                     return Done<bool>("Not found!", ResponseCode.NotFound);
                 StringBuilder sb = new();
                 if (!string.IsNullOrEmpty(newsMaterial.FinalAttachments) && newsMaterial.FinalAttachments != designedVM.FinalAttachments)
-                    sb.AppendLine($"Final attachments changed from: {newsMaterial.FinalAttachments}, To: {designedVM.FinalAttachments}");
+                    sb.AppendLine($"تم تعديل المرفقات النهائية من: {newsMaterial.FinalAttachments}, To: {designedVM.FinalAttachments}");
                 if (!designedVM.SaveOnly)
                 {
                     newsMaterial.CurrentStatus = NewsMaterialStatus.Designed;

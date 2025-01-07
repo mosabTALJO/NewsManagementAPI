@@ -196,6 +196,9 @@ namespace NewsManagementAPI.Migrations
                     b.Property<string>("FinalContent")
                         .HasColumnType("text");
 
+                    b.Property<int>("FinalPublishingStrategy")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Images")
                         .HasColumnType("text");
 
@@ -213,6 +216,9 @@ namespace NewsManagementAPI.Migrations
 
                     b.Property<string>("ReviewNote")
                         .HasColumnType("text");
+
+                    b.Property<bool>("SendToDesigner")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -557,7 +563,7 @@ namespace NewsManagementAPI.Migrations
             modelBuilder.Entity("NewsManagementAPI.Models.NewsMaterialLog", b =>
                 {
                     b.HasOne("NewsManagementAPI.Models.NewsMaterial", "NewsMaterial")
-                        .WithMany()
+                        .WithMany("Logs")
                         .HasForeignKey("NewsMaterialID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -615,6 +621,8 @@ namespace NewsManagementAPI.Migrations
             modelBuilder.Entity("NewsManagementAPI.Models.NewsMaterial", b =>
                 {
                     b.Navigation("Histories");
+
+                    b.Navigation("Logs");
 
                     b.Navigation("NewsSocialMedias");
 

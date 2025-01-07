@@ -23,6 +23,8 @@
         public bool ContentConfirmed { get; set; }
         public string? PublisherNote { get; set; }
         public DateTime? DeadLine { get; set; }
+        public bool SendToDesigner { get; set; }
+        public PublishingStrategy FinalPublishingStrategy { get; set; }
         public List<NewsMaterialHistory> Histories { get; set; } = [];
         public List<NewsMaterialLog> Logs { get; set; } = [];
         public List<NewsMaterialPublishStrat> PublishingStrategies { get; set; } = [];
