@@ -7,7 +7,9 @@ namespace NewsManagementAPI.ViewModels.NewsMaterialVMs
         public int ID { get; set; }
         public int NewsMaterialID { get; set; }
         public required string NewsUserID { get; set; }
+        public required string NewsUserDisplayName { get; set; }
         public string? AssignerID { get; set; }
+        public string? AssignerDisplayName { get; set; }
         public DateTime Date { get; set; }
         public NewsMaterialStatus Status { get; set; }
     }

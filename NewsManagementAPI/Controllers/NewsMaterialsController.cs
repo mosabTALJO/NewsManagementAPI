@@ -98,6 +98,25 @@ namespace NewsManagementAPI.Controllers
             }
         }
 
+        [HttpGet("Details/{id}")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<NewsMaterialDetailsVM>>> GetDetails(int id)
+        {
+            try
+            {
+                var newsMaterial = await newsDbContext.NewsMaterials.Where(x => x.ID == id).ToNewsMaterialDetailsVM().FirstOrDefaultAsync();
+                if (newsMaterial == null)
+                    return Done<NewsMaterialDetailsVM>("News material not found!", ResponseCode.NotFound);
+                if (!User.IsManager() && newsMaterial.CurrentUser?.Id != User.Identity!.Name)
+                    return Done<NewsMaterialDetailsVM>("This news material is not assigned to you!", ResponseCode.Unauthorized);
+                return Done(newsMaterial);
+            }
+            catch (Exception ex)
+            {
+                return Done<NewsMaterialDetailsVM>(ex.AllMessages(), ResponseCode.BadRequest);
+            }
+        }
+
         [HttpPost("ReportNews")]
         [Authorize(Policy = UserRoleNames.Reporter)]
         public async Task<ActionResult<ApiResponse<int>>> ReportNews([FromBody] ReportedNewsVM reportedNews)

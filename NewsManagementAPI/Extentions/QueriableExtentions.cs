@@ -35,21 +35,61 @@ namespace NewsManagementAPI.Extentions
                 ContentRequiresConfirmation = x.ContentRequiresConfirmation,
                 DeadLine = x.DeadLine,
                 PublishingStrategies = x.PublishingStrategies.Select(x => x.PublishingStrategy).ToList(),
-                Histories = x.Histories!.Select(h => new NewsMaterialHistoryVM
-                {
-                    AssignerID = h.AssignerID,
-                    Date = h.Date,
-                    NewsUserID = h.NewsUserID,
-                    ID = h.ID,
-                    NewsMaterialID = h.NewsMaterialID,
-                    Status = h.Status,
-                }).ToList(),
                 CurrentUser = x.CurrentUser == null ? null : new()
                 {
                     DisplayName = x.CurrentUser.DisplayName,
                     Id = x.CurrentUserID!,
                     ReporterType = x.CurrentUser.ReporterType,
                 }
+            });
+        }
+        public static IQueryable<NewsMaterialDetailsVM> ToNewsMaterialDetailsVM(this IQueryable<NewsMaterial> source)
+        {
+            return source.Select(x => new NewsMaterialDetailsVM
+            {
+                ID = x.ID,
+                Content = x.Content,
+                Attachments = x.Attachments,
+                CurrentStatus = x.CurrentStatus,
+                EditorNote = x.EditorNote,
+                FinalAttachments = x.FinalAttachments,
+                FinalContent = x.FinalContent,
+                Images = x.Images,
+                Priority = x.Priority,
+                ReviewNote = x.ReviewNote,
+                NewsRegion = x.NewsRegion,
+                ReportedDate = x.ReportedDate,
+                Type = x.Type,
+                Urgency = x.Urgency,
+                ExtremelyUrgent = x.ExtremelyUrgent,
+                ContentRequiresConfirmation = x.ContentRequiresConfirmation,
+                DeadLine = x.DeadLine,
+                PublishingStrategies = x.PublishingStrategies.Select(x => x.PublishingStrategy).ToList(),
+                CurrentUser = x.CurrentUser == null ? null : new()
+                {
+                    DisplayName = x.CurrentUser.DisplayName,
+                    Id = x.CurrentUserID!,
+                    ReporterType = x.CurrentUser.ReporterType,
+                },
+                Histories = x.Histories!.Select(h => new NewsMaterialHistoryVM
+                {
+                    ID = h.ID,
+                    NewsUserID = h.NewsUserID,
+                    NewsUserDisplayName = h.NewsUser!.DisplayName,
+                    AssignerID = h.AssignerID,
+                    AssignerDisplayName = h.Assigner == null ? null : h.Assigner.DisplayName,
+                    Date = h.Date,
+                    NewsMaterialID = h.NewsMaterialID,
+                    Status = h.Status,
+                }).ToList(),
+                Logs = x.Logs.Select(a => new NewsMaterialLogVM
+                {
+                    ID = a.ID,
+                    Log = a.Log,
+                    NewsUserID = a.NewsUserID,
+                    NewsUserDisplayName = a.NewsUser!.DisplayName,
+                    NewsMaterialID = a.NewsMaterialID,
+                }).ToList()
             });
         }
         public static IQueryable<NewsMaterialLiteVM> ToNewsMaterialLiteVM(this IQueryable<NewsMaterial> source)

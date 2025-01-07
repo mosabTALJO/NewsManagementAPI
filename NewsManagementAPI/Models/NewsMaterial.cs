@@ -23,9 +23,10 @@
         public bool ContentConfirmed { get; set; }
         public string? PublisherNote { get; set; }
         public DateTime? DeadLine { get; set; }
-        public virtual List<NewsMaterialHistory> Histories { get; set; } = [];
-        public virtual List<NewsMaterialPublishStrat> PublishingStrategies { get; set; } = [];
-        public virtual List<NewsSocialMedia> NewsSocialMedias { get; set; } = [];
+        public List<NewsMaterialHistory> Histories { get; set; } = [];
+        public List<NewsMaterialLog> Logs { get; set; } = [];
+        public List<NewsMaterialPublishStrat> PublishingStrategies { get; set; } = [];
+        public List<NewsSocialMedia> NewsSocialMedias { get; set; } = [];
     }
     public enum NewsMaterialType
     {

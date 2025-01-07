@@ -24,6 +24,5 @@ namespace NewsManagementAPI.ViewModels.NewsMaterialVMs
         public string? FinalContent { get; set; }
         public string? FinalAttachments { get; set; }
         public DateTime? DeadLine { get; set; }
-        public virtual List<NewsMaterialHistoryVM>? Histories { get; set; }
     }
 }
