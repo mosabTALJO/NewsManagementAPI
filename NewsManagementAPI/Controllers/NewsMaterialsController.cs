@@ -124,23 +124,22 @@ namespace NewsManagementAPI.Controllers
                         Date = DateTime.UtcNow,
                     }]
                 };
-                //comment until the firebase settings are added
-                //if (newsMaterial.ExtremelyUrgent)
-                //{
-                //    var reviewerIds = await newsDbContext.UserClaims
-                //        .Where(x => x.ClaimValue == NewsUserRole.Reviewer.GetPolicyNumber())
-                //        .Select(x => x.UserId)
-                //        .ToArrayAsync();
-                //    foreach (var reviewerId in reviewerIds)
-                //    {
-                //        await notificationService.AddNotification(new()
-                //        {
-                //            UserId = reviewerId,
-                //            Title = "Extremely Urgent",
-                //            Text = $"A new extremely urgent news material has been reported.",
-                //        });
-                //    }
-                //}
+                if (newsMaterial.ExtremelyUrgent)
+                {
+                    var reviewerIds = await newsDbContext.UserClaims
+                        .Where(x => x.ClaimValue == NewsUserRole.Reviewer.GetPolicyNumber())
+                        .Select(x => x.UserId)
+                        .ToArrayAsync();
+                    foreach (var reviewerId in reviewerIds)
+                    {
+                        await notificationService.AddNotification(new()
+                        {
+                            UserId = reviewerId,
+                            Title = "Extremely Urgent",
+                            Text = $"A new extremely urgent news material has been reported.",
+                        });
+                    }
+                }
                 await newsDbContext.NewsMaterials.AddAsync(newsMaterial);
                 await newsDbContext.SaveChangesAsync();
                 return Done(newsMaterial.ID);
