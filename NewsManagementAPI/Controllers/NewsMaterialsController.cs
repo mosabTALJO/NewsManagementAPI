@@ -205,7 +205,14 @@ namespace NewsManagementAPI.Controllers
                 newsMaterial.DeadLine = reviewedVM.DeadLine;
                 newsMaterial.ExtremelyUrgent = reviewedVM.ExtremelyUrgent;
                 newsMaterial.ContentRequiresConfirmation = reviewedVM.ContentRequiresConfirmation;
-                newsMaterial.PublishingStrategies = reviewedVM.PublishingStrategies.Select(x => new NewsMaterialPublishStrat { NewsMaterialID = newsMaterial.ID, PublishingStrategy = x }).ToList();
+                foreach (var strat in reviewedVM.PublishingStrategies)
+                {
+                    if (newsMaterial.PublishingStrategies.Any(x => x.PublishingStrategy == strat) == false)
+                        newsMaterial.PublishingStrategies.Add(new() { NewsMaterialID = newsMaterial.ID, PublishingStrategy = strat });
+                }
+                var deleteStratIds = newsMaterial.PublishingStrategies.ExceptBy(reviewedVM.PublishingStrategies, x => x.PublishingStrategy).Select(x => x.ID).ToArray();
+                newsMaterial.PublishingStrategies.RemoveAll(x => deleteStratIds.Contains(x.ID));
+                await newsDbContext.NewsMaterialPublishingStrategies.Where(x => deleteStratIds.Contains(x.ID)).ExecuteDeleteAsync();
                 newsDbContext.NewsMaterials.Update(newsMaterial);
 
                 await newsDbContext.CreateNewsMaterialHistory(newsMaterial.ID, newsMaterial.CurrentStatus, User.Identity!.Name!, null);

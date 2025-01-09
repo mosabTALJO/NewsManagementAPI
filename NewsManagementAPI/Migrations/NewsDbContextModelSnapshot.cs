@@ -314,7 +314,7 @@ namespace NewsManagementAPI.Migrations
 
                     b.HasIndex("NewsMaterialID");
 
-                    b.ToTable("NewsMaterialPublishStrat");
+                    b.ToTable("NewsMaterialPublishingStrategies");
                 });
 
             modelBuilder.Entity("NewsManagementAPI.Models.NewsSocialMedia", b =>

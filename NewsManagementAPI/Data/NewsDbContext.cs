@@ -31,6 +31,7 @@ namespace NewsManagementAPI.Data
         public DbSet<NewsMaterial> NewsMaterials { get; set; }
         public DbSet<NewsMaterialHistory> NewsMaterialHistories { get; set; }
         public DbSet<NewsMaterialLog> NewsMaterialLogs { get; set; }
+        public DbSet<NewsMaterialPublishStrat> NewsMaterialPublishingStrategies { get; set; }
         public DbSet<SocialMedia> SocialMedias { get; set; }
         public DbSet<NewsSocialMedia> NewsSocialMedias { get; set; }
         public DbSet<Notification> Notifications { get; set; }
