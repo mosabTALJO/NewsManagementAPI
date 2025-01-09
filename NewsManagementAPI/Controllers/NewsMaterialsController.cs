@@ -177,9 +177,11 @@ namespace NewsManagementAPI.Controllers
             {
                 if (reviewedVM.PublishingStrategies.Count == 0)
                     return Done<bool>("Please select a publishing strategy(s)!", ResponseCode.BadRequest);
-                var newsMaterial = await newsDbContext.NewsMaterials.AsNoTracking().FirstOrDefaultAsync(x => x.ID == reviewedVM.ID);
+                var newsMaterial = await newsDbContext.NewsMaterials.Include(x => x.PublishingStrategies).AsNoTracking().FirstOrDefaultAsync(x => x.ID == reviewedVM.ID);
                 if (newsMaterial == null)
                     return Done<bool>("Not found!", ResponseCode.NotFound);
+                if (newsMaterial.CurrentStatus >= NewsMaterialStatus.Reviewed)
+                    return Done<bool>("تم تدقبق الخبر مسبقا", ResponseCode.BadRequest);
                 StringBuilder sb = new();
                 if (newsMaterial.Content != reviewedVM.Content)
                     sb.AppendLine($"تم تعديل المحتوى من: \"{newsMaterial.Content}\" إلى: \"{reviewedVM.Content}\"");
