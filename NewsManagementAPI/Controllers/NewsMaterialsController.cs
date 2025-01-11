@@ -10,6 +10,7 @@ using NewsManagementAPI.Services;
 using NewsManagementAPI.ViewModels;
 using NewsManagementAPI.ViewModels.NewsMaterialVMs;
 using System;
+using System.Linq;
 using System.Text;
 
 namespace NewsManagementAPI.Controllers
@@ -182,6 +183,10 @@ namespace NewsManagementAPI.Controllers
                     return Done<bool>("Not found!", ResponseCode.NotFound);
                 if (newsMaterial.CurrentStatus >= NewsMaterialStatus.Reviewed)
                     return Done<bool>("تم تدقبق الخبر مسبقا", ResponseCode.BadRequest);
+                if (reviewedVM.Images?.Split(',').Except(newsMaterial.Images?.Split(',') ?? []).Any() == true)
+                    return Done<bool>("لا يمكنك إضافة الصور", ResponseCode.BadRequest);
+                if (reviewedVM.Attachments?.Split(',').Except(newsMaterial.Attachments?.Split(',') ?? []).Any() == true)
+                    return Done<bool>("لا يمكنك إضافة المرفقات", ResponseCode.BadRequest);
                 StringBuilder sb = new();
                 if (newsMaterial.Content != reviewedVM.Content)
                     sb.AppendLine($"تم تعديل المحتوى من: \"{newsMaterial.Content}\" إلى: \"{reviewedVM.Content}\"");
@@ -193,6 +198,10 @@ namespace NewsManagementAPI.Controllers
                     sb.AppendLine($"تم تعديل مستعجل جدا من: \"{newsMaterial.ExtremelyUrgent}\", إلى: \"{reviewedVM.ExtremelyUrgent}\"");
                 if (newsMaterial.ContentRequiresConfirmation != reviewedVM.ContentRequiresConfirmation)
                     sb.AppendLine($"تم تعديل المحتوى يحتاج الموافقة من: \"{newsMaterial.ContentRequiresConfirmation}\", إلى: \"{reviewedVM.ContentRequiresConfirmation}\"");
+                if (newsMaterial.Images != reviewedVM.Images)
+                    sb.AppendLine($"تم تعديل الصور من: \"{newsMaterial.ContentRequiresConfirmation}\", إلى: \"{reviewedVM.ContentRequiresConfirmation}\"");
+                if (newsMaterial.Attachments != reviewedVM.Attachments)
+                    sb.AppendLine($"تم تعديل المرفقات من: \"{newsMaterial.ContentRequiresConfirmation}\", إلى: \"{reviewedVM.ContentRequiresConfirmation}\"");
                 if (newsMaterial.ContentRequiresConfirmation)
                     newsMaterial.CurrentStatus = NewsMaterialStatus.WaitingPublisherConfirmation;
                 else if (reviewedVM.ExtremelyUrgent)
@@ -207,6 +216,8 @@ namespace NewsManagementAPI.Controllers
                 newsMaterial.DeadLine = reviewedVM.DeadLine;
                 newsMaterial.ExtremelyUrgent = reviewedVM.ExtremelyUrgent;
                 newsMaterial.ContentRequiresConfirmation = reviewedVM.ContentRequiresConfirmation;
+                newsMaterial.Images = reviewedVM.Images;
+                newsMaterial.Attachments = reviewedVM.Attachments;
                 foreach (var strat in reviewedVM.PublishingStrategies)
                 {
                     if (newsMaterial.PublishingStrategies.Any(x => x.PublishingStrategy == strat) == false)

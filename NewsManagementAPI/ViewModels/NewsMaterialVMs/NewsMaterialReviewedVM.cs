@@ -13,5 +13,7 @@ namespace NewsManagementAPI.ViewModels.NewsMaterialVMs
         public bool ContentRequiresConfirmation { get; set; }
         public DateTime? DeadLine { get; set; }
         public List<PublishingStrategy> PublishingStrategies { get; set; } = [];
+        public string? Attachments { get; set; }
+        public string? Images { get; set; }
     }
 }
