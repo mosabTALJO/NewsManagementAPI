@@ -205,7 +205,12 @@ namespace NewsManagementAPI.Controllers
                 if (newsMaterial.ContentRequiresConfirmation)
                     newsMaterial.CurrentStatus = NewsMaterialStatus.WaitingPublisherConfirmation;
                 else if (reviewedVM.ExtremelyUrgent)
-                    newsMaterial.CurrentStatus = NewsMaterialStatus.Edited;//skip editing
+                {
+                    if (reviewedVM.SkipProofreading)
+                        newsMaterial.CurrentStatus = NewsMaterialStatus.Designed;//go to publishing
+                    else
+                        newsMaterial.CurrentStatus = NewsMaterialStatus.Edited;//skip editing
+                }
                 else
                     newsMaterial.CurrentStatus = NewsMaterialStatus.Reviewed;
                 newsMaterial.CurrentUserID = null;

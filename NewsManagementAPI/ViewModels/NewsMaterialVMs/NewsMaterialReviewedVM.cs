@@ -15,5 +15,6 @@ namespace NewsManagementAPI.ViewModels.NewsMaterialVMs
         public List<PublishingStrategy> PublishingStrategies { get; set; } = [];
         public string? Attachments { get; set; }
         public string? Images { get; set; }
+        public bool SkipProofreading { get; set; }
     }
 }
