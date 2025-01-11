@@ -36,6 +36,7 @@ namespace NewsManagementAPI.Extentions
                 DeadLine = x.DeadLine,
                 SendToDesigner = x.SendToDesigner,
                 FinalPublishingStrategy = x.FinalPublishingStrategy,
+                PublishDate = x.PublishDate,
                 PublishingStrategies = x.PublishingStrategies.Select(x => x.PublishingStrategy).ToList(),
                 CurrentUser = x.CurrentUser == null ? null : new()
                 {
@@ -68,6 +69,7 @@ namespace NewsManagementAPI.Extentions
                 DeadLine = x.DeadLine,
                 SendToDesigner = x.SendToDesigner,
                 FinalPublishingStrategy = x.FinalPublishingStrategy,
+                PublishDate = x.PublishDate,
                 PublishingStrategies = x.PublishingStrategies.Select(x => x.PublishingStrategy).ToList(),
                 CurrentUser = x.CurrentUser == null ? null : new()
                 {

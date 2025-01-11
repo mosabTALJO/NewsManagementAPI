@@ -208,6 +208,9 @@ namespace NewsManagementAPI.Migrations
                     b.Property<int>("Priority")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("PublishDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("PublisherNote")
                         .HasColumnType("text");
 
