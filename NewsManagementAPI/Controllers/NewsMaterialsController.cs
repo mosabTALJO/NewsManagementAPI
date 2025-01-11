@@ -285,6 +285,16 @@ namespace NewsManagementAPI.Controllers
                 else
                     return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
 
+                var oldUserId = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+                    .Select(x => x.CurrentUserID).FirstOrDefaultAsync();
+                if (asigneeId != oldUserId)
+                {
+                    var oldUserName= await userManager.Users.Where(x => x.Id == oldUserId)
+                        .Select(x => x.DisplayName).FirstOrDefaultAsync();
+                    var newUserName= await userManager.Users.Where(x => x.Id == asigneeId)
+                        .Select(x => x.DisplayName).FirstOrDefaultAsync();
+                    await newsDbContext.CreateNewMaterialLog(newsMaterialId, User.Identity!.Name!, $"تم تغيير المستخدم من {oldUserName} إلى {newUserName}");
+                }
                 var count = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
                     .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, asigneeId)
                                               .SetProperty(x => x.CurrentStatus, status));
