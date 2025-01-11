@@ -35,6 +35,7 @@ namespace NewsManagementAPI.Extentions
                 ContentRequiresConfirmation = x.ContentRequiresConfirmation,
                 DeadLine = x.DeadLine,
                 SendToDesigner = x.SendToDesigner,
+                FinalPublishingStrategy = x.FinalPublishingStrategy,
                 PublishingStrategies = x.PublishingStrategies.Select(x => x.PublishingStrategy).ToList(),
                 CurrentUser = x.CurrentUser == null ? null : new()
                 {
@@ -66,6 +67,7 @@ namespace NewsManagementAPI.Extentions
                 ContentRequiresConfirmation = x.ContentRequiresConfirmation,
                 DeadLine = x.DeadLine,
                 SendToDesigner = x.SendToDesigner,
+                FinalPublishingStrategy = x.FinalPublishingStrategy,
                 PublishingStrategies = x.PublishingStrategies.Select(x => x.PublishingStrategy).ToList(),
                 CurrentUser = x.CurrentUser == null ? null : new()
                 {
