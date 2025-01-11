@@ -54,8 +54,6 @@ namespace NewsManagementAPI.Controllers
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate >= reportedAfter);
                 if (reportedBefore != null)
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate <= reportedBefore);
-                if (!string.IsNullOrEmpty(userId))
-                    newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == userId);
                 if (priority != null)
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.Priority == priority);
                 if (urgency != null)
@@ -66,6 +64,12 @@ namespace NewsManagementAPI.Controllers
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUser!.ReporterType == reporterType);
                 if (newsRegion != null)
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.NewsRegion == newsRegion);
+                if (User.HasRole(NewsUserRole.Editor))
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == User.Identity!.Name || x.CurrentUserID == null);
+                else if (!User.IsManager())
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == User.Identity!.Name);
+                else if (!string.IsNullOrEmpty(userId))
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == userId);
 
                 var newsMaterials = await newsMaterialsSql.ToNewsMaterialLiteVM()
                     .OrderByDescending(x => x.ExtremelyUrgent).ThenByDescending(x => x.Urgency).ThenByDescending(x => x.Priority)
