@@ -48,7 +48,7 @@ namespace NewsManagementAPI.Helpers
             { NewsUserRole.Admin, Enum.GetValues<NewsMaterialStatus>() },
             { NewsUserRole.Reporter, [NewsMaterialStatus.Draft] },
             { NewsUserRole.Reviewer, [NewsMaterialStatus.Reported] },
-            { NewsUserRole.Editor, [NewsMaterialStatus.AssignedForEditing, NewsMaterialStatus.Editing] },
+            { NewsUserRole.Editor, [NewsMaterialStatus.Reviewed, NewsMaterialStatus.AssignedForEditing, NewsMaterialStatus.Editing] },
             { NewsUserRole.EditingManager, [NewsMaterialStatus.Reviewed, NewsMaterialStatus.AssignedForEditing, NewsMaterialStatus.Editing] },
             { NewsUserRole.Proofreader, [NewsMaterialStatus.AssignedForProofreading, NewsMaterialStatus.Proofreading] },
             { NewsUserRole.ProofreadingManager, [NewsMaterialStatus.Edited, NewsMaterialStatus.AssignedForProofreading, NewsMaterialStatus.Proofreading] },

@@ -252,58 +252,61 @@ namespace NewsManagementAPI.Controllers
         {
             try
             {
-                if (!User.IsManager())
-                    return Done<bool>("You are not authorized to do this action!", ResponseCode.Unauthorized);
-                var asigneeClaims = await newsDbContext.UserClaims.Where(x => x.UserId == asigneeId).AsNoTracking().ToArrayAsync();
-                NewsMaterialStatus status;
-                if (User.HasRole(NewsUserRole.EditingManager))
+                if (User.IsManager() || (User.HasRole(NewsUserRole.Editor) && asigneeId == User.Identity!.Name))
                 {
-                    if (!asigneeClaims.HasRole(NewsUserRole.Editor))
-                        return Done<bool>("You can only assign to editors!", ResponseCode.BadRequest);
-                    status = NewsMaterialStatus.AssignedForEditing;
+                    var asigneeClaims = await newsDbContext.UserClaims.Where(x => x.UserId == asigneeId).AsNoTracking().ToArrayAsync();
+                    NewsMaterialStatus status;
+                    if (User.HasRole(NewsUserRole.EditingManager))
+                    {
+                        if (!asigneeClaims.HasRole(NewsUserRole.Editor))
+                            return Done<bool>("You can only assign to editors!", ResponseCode.BadRequest);
+                        status = NewsMaterialStatus.AssignedForEditing;
+                    }
+                    else if (User.HasRole(NewsUserRole.ProofreadingManager))
+                    {
+                        if (!asigneeClaims.HasRole(NewsUserRole.Proofreader))
+                            return Done<bool>("You can only assign to proofreaders!", ResponseCode.BadRequest);
+                        status = NewsMaterialStatus.AssignedForProofreading;
+                    }
+                    else if (User.HasRole(NewsUserRole.DesigningManager))
+                    {
+                        if (!asigneeClaims.HasRole(NewsUserRole.Designer))
+                            return Done<bool>("You can only assign to designers!", ResponseCode.BadRequest);
+                        status = NewsMaterialStatus.AssignedForDesigning;
+                    }
+                    else if (User.HasRole(NewsUserRole.PublishingManager))
+                    {
+                        if (!asigneeClaims.HasRole(NewsUserRole.Publisher))
+                            return Done<bool>("You can only assign to publishers!", ResponseCode.BadRequest);
+                        status = NewsMaterialStatus.AssignedForPublishing;
+                    }
+                    //else if (User.HasRole(NewsUserRole.Admin))
+                    //    status = NewsMaterialStatus.AssignedForDesigning;
+                    else
+                        return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
+
+                    var oldUserId = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+                        .Select(x => x.CurrentUserID).FirstOrDefaultAsync();
+                    if (asigneeId != oldUserId)
+                    {
+                        var oldUserName = await userManager.Users.Where(x => x.Id == oldUserId)
+                            .Select(x => x.DisplayName).FirstOrDefaultAsync();
+                        var newUserName = await userManager.Users.Where(x => x.Id == asigneeId)
+                            .Select(x => x.DisplayName).FirstOrDefaultAsync();
+                        await newsDbContext.CreateNewMaterialLog(newsMaterialId, User.Identity!.Name!, $"تم تغيير المستخدم من {oldUserName} إلى {newUserName}");
+                    }
+                    var count = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
+                        .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, asigneeId)
+                                                  .SetProperty(x => x.CurrentStatus, status));
+                    if (count == 0)
+                        return Done<bool>("Not found!", ResponseCode.NotFound);
+
+                    await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, status, asigneeId, User.Identity!.Name!);
+                    await newsDbContext.SaveChangesAsync();
+                    return Done(true);
                 }
-                else if (User.HasRole(NewsUserRole.ProofreadingManager))
-                {
-                    if (!asigneeClaims.HasRole(NewsUserRole.Proofreader))
-                        return Done<bool>("You can only assign to proofreaders!", ResponseCode.BadRequest);
-                    status = NewsMaterialStatus.AssignedForProofreading;
-                }
-                else if (User.HasRole(NewsUserRole.DesigningManager))
-                {
-                    if (!asigneeClaims.HasRole(NewsUserRole.Designer))
-                        return Done<bool>("You can only assign to designers!", ResponseCode.BadRequest);
-                    status = NewsMaterialStatus.AssignedForDesigning;
-                }
-                else if (User.HasRole(NewsUserRole.PublishingManager))
-                {
-                    if (!asigneeClaims.HasRole(NewsUserRole.Publisher))
-                        return Done<bool>("You can only assign to publishers!", ResponseCode.BadRequest);
-                    status = NewsMaterialStatus.AssignedForPublishing;
-                }
-                //else if (User.HasRole(NewsUserRole.Admin))
-                //    status = NewsMaterialStatus.AssignedForDesigning;
                 else
-                    return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
-
-                var oldUserId = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
-                    .Select(x => x.CurrentUserID).FirstOrDefaultAsync();
-                if (asigneeId != oldUserId)
-                {
-                    var oldUserName= await userManager.Users.Where(x => x.Id == oldUserId)
-                        .Select(x => x.DisplayName).FirstOrDefaultAsync();
-                    var newUserName= await userManager.Users.Where(x => x.Id == asigneeId)
-                        .Select(x => x.DisplayName).FirstOrDefaultAsync();
-                    await newsDbContext.CreateNewMaterialLog(newsMaterialId, User.Identity!.Name!, $"تم تغيير المستخدم من {oldUserName} إلى {newUserName}");
-                }
-                var count = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
-                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, asigneeId)
-                                              .SetProperty(x => x.CurrentStatus, status));
-                if (count == 0)
-                    return Done<bool>("Not found!", ResponseCode.NotFound);
-
-                await newsDbContext.CreateNewsMaterialHistory(newsMaterialId, status, asigneeId, User.Identity!.Name!);
-                await newsDbContext.SaveChangesAsync();
-                return Done(true);
+                    return Done<bool>("You are not authorized to do this action!", ResponseCode.Unauthorized);
             }
             catch (Exception ex)
             {
