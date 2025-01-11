@@ -32,6 +32,8 @@ namespace NewsManagementAPI.Controllers
                                                                                                                                             //string? statuses = null,//comma seperated
             DateTime? reportedAfter = null,
             DateTime? reportedBefore = null,
+            DateTime? publishedAfter = null,
+            DateTime? publishedBefore = null,
             Priority? priority = null,
             Urgency? urgency = null,
             ReporterType? reporterType = null,
@@ -54,6 +56,10 @@ namespace NewsManagementAPI.Controllers
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate >= reportedAfter);
                 if (reportedBefore != null)
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.ReportedDate <= reportedBefore);
+                if (publishedAfter != null)
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.PublishDate >= publishedAfter);
+                if (publishedBefore != null)
+                    newsMaterialsSql = newsMaterialsSql.Where(x => x.PublishDate <= publishedBefore);
                 if (priority != null)
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.Priority == priority);
                 if (urgency != null)
