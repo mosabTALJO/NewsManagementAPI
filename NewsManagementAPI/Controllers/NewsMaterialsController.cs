@@ -290,6 +290,10 @@ namespace NewsManagementAPI.Controllers
                             return Done<bool>("You can only assign to publishers!", ResponseCode.BadRequest);
                         status = NewsMaterialStatus.AssignedForPublishing;
                     }
+                    else if (User.HasRole(NewsUserRole.Editor) && asigneeId == User.Identity!.Name)
+                    {
+                        status = NewsMaterialStatus.AssignedForEditing;
+                    }
                     //else if (User.HasRole(NewsUserRole.Admin))
                     //    status = NewsMaterialStatus.AssignedForDesigning;
                     else
@@ -297,7 +301,7 @@ namespace NewsManagementAPI.Controllers
 
                     var oldUserId = await newsDbContext.NewsMaterials.Where(x => x.ID == newsMaterialId)
                         .Select(x => x.CurrentUserID).FirstOrDefaultAsync();
-                    if (asigneeId != oldUserId)
+                    if (oldUserId != null && asigneeId != oldUserId)
                     {
                         var oldUserName = await userManager.Users.Where(x => x.Id == oldUserId)
                             .Select(x => x.DisplayName).FirstOrDefaultAsync();
