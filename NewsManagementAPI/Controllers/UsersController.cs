@@ -108,6 +108,11 @@ namespace NewsManagementAPI.Controllers
                 user.DisplayName = userVM.DisplayName;
                 user.Image = userVM.Image;
                 user.ReporterType = userVM.ReporterType;
+                var userClaims = await userManager.GetClaimsAsync(user);
+                var removeClaims = userClaims.ExceptBy(userVM.Roles.Select(x => x.GetPolicyNumber()), x => x.Value);
+                await userManager.RemoveClaimsAsync(user, removeClaims);
+                var addClaims = userVM.Roles.Select(x => x.GetPolicyNumber()).Except(userClaims.Select(x => x.Value));
+                await userManager.AddClaimsAsync(user, addClaims.Select(x => new Claim(ClaimTypes.Role, x)));
                 if (!string.IsNullOrEmpty(userVM.NewPassword) && !string.IsNullOrEmpty(userVM.OldPassword) && userVM.NewPassword != userVM.OldPassword)
                 {
                     var changePass = await userManager.ChangePasswordAsync(user, userVM.OldPassword, userVM.NewPassword);
