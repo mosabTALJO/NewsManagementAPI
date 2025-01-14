@@ -16,7 +16,8 @@ namespace NewsManagementAPI.Data
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (Debugger.IsAttached || isDevelopment)
-                optionsBuilder.UseNpgsql(@"Host=localhost; Port=5432; Database=news; Username=postgres; Password=123456lolo");
+                optionsBuilder.UseNpgsql(@"Host=37.27.57.167; Port=5433; Database=news; Username=newsadmin; Password=MeJU?XNKJqd_D7_4");
+                //optionsBuilder.UseNpgsql(@"Host=localhost; Port=5432; Database=news; Username=postgres; Password=123456lolo");
             else
                 optionsBuilder.UseNpgsql(@"Host=37.27.57.167; Port=5433; Database=news; Username=newsadmin; Password=MeJU?XNKJqd_D7_4");
         }

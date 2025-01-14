@@ -46,6 +46,7 @@ namespace NewsManagementAPI.Extentions
             List<NewsMaterialStatus> allowedStatuses = [];
             foreach (var claim in user.Claims.Where(x => x.Type == ClaimTypes.Role))
                 allowedStatuses.AddRange(UserHelper.RoleAllowedStatuses[Enum.Parse<NewsUserRole>(claim.Value)]);
+            allowedStatuses = allowedStatuses.Distinct().ToList();
             return allowedStatuses;
         }
     }

@@ -70,10 +70,13 @@ namespace NewsManagementAPI.Controllers
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUser!.ReporterType == reporterType);
                 if (newsRegion != null)
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.NewsRegion == newsRegion);
-                if (User.HasRole(NewsUserRole.Editor))
-                    newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == User.Identity!.Name || x.CurrentUserID == null);
-                else if (!User.IsManager())
-                    newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == User.Identity!.Name);
+                if (!User.IsManager())
+                {
+                    if (User.HasRole(NewsUserRole.Editor))
+                        newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == User.Identity!.Name || x.CurrentUserID == null);
+                    else
+                        newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == User.Identity!.Name);
+                }
                 else if (!string.IsNullOrEmpty(userId))
                     newsMaterialsSql = newsMaterialsSql.Where(x => x.CurrentUserID == userId);
 
@@ -620,7 +623,7 @@ namespace NewsManagementAPI.Controllers
                     case NewsMaterialStatus.AssignedForPublishing:
                         if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.Publisher) && !User.HasRole(NewsUserRole.PublishingManager))
                             return Done<bool>("Unauthorized", ResponseCode.Unauthorized);
-                        status = NewsMaterialStatus.Reported;
+                        status = NewsMaterialStatus.Designed;
                         break;
                     case NewsMaterialStatus.WaitingPublisherConfirmation:
                         if (!User.HasRole(NewsUserRole.Admin) && !User.HasRole(NewsUserRole.Reviewer))
