@@ -8,6 +8,6 @@
         public required string NewsUserDisplayName { get; set; }
         public required string Log { get; set; }
         public DateTime Date { get; set; }
-        public string[] Sentences => Log.Split('\n');
+        public string[] Sentences => Log.Split('\n', StringSplitOptions.RemoveEmptyEntries); //for frontend
     }
 }

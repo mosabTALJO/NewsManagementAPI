@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NewsManagementAPI.Migrations
 {
     [DbContext(typeof(NewsDbContext))]
-    [Migration("20250114121512_LogDate")]
+    [Migration("20250114124408_LogDate")]
     partial class LogDate
     {
         /// <inheritdoc />
