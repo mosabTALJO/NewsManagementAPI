@@ -216,9 +216,9 @@ namespace NewsManagementAPI.Controllers
                 if (newsMaterial.ContentRequiresConfirmation != reviewedVM.ContentRequiresConfirmation)
                     sb.AppendLine($"تم تعديل المحتوى يحتاج الموافقة من: \"{newsMaterial.ContentRequiresConfirmation}\", إلى: \"{reviewedVM.ContentRequiresConfirmation}\"");
                 if (newsMaterial.Images != reviewedVM.Images)
-                    sb.AppendLine($"تم تعديل الصور من: \"{newsMaterial.ContentRequiresConfirmation}\", إلى: \"{reviewedVM.ContentRequiresConfirmation}\"");
+                    sb.AppendLine($"تم تعديل الصور من: \"{newsMaterial.Images}\", إلى: \"{reviewedVM.Images}\"");
                 if (newsMaterial.Attachments != reviewedVM.Attachments)
-                    sb.AppendLine($"تم تعديل المرفقات من: \"{newsMaterial.ContentRequiresConfirmation}\", إلى: \"{reviewedVM.ContentRequiresConfirmation}\"");
+                    sb.AppendLine($"تم تعديل المرفقات من: \"{newsMaterial.Attachments}\", إلى: \"{reviewedVM.Attachments}\"");
                 if (newsMaterial.ContentRequiresConfirmation)
                     newsMaterial.CurrentStatus = NewsMaterialStatus.WaitingPublisherConfirmation;
                 else if (reviewedVM.ExtremelyUrgent)
@@ -525,9 +525,10 @@ namespace NewsManagementAPI.Controllers
                 await newsDbContext.CreateNewsMaterialHistory(publishedVM.ID, NewsMaterialStatus.Published, User.Identity!.Name!, null);
                 await newsDbContext.NewsSocialMedias.AddRangeAsync(publishedVM.SocialMedias.Select(x => new NewsSocialMedia
                 {
-                    Url = x.Url,
                     NewsMaterialID = publishedVM.ID,
+                    Url = x.Url,
                     SocialMediaID = x.SocialMediaID,
+                    Schedule = x.Schedule,
                 }));
                 await newsDbContext.SaveChangesAsync();
                 return Done(true);

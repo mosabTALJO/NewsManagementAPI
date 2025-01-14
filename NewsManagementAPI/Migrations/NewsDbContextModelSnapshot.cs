@@ -334,6 +334,9 @@ namespace NewsManagementAPI.Migrations
                     b.Property<int>("NewsMaterialID")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("Schedule")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("SocialMediaID")
                         .HasColumnType("integer");
 

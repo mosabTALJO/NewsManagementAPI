@@ -9,5 +9,6 @@
     {
         public int SocialMediaID { get; set; }
         public required string Url { get; set; }
+        public bool Schedule { get; set; }
     }
 }

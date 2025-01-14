@@ -8,5 +8,6 @@
         public int NewsMaterialID { get; set; }
         public NewsMaterial? NewsMaterial { get; set; }
         public required string Url { get; set; }
+        public bool Schedule { get; set; }
     }
 }

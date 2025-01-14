@@ -16,19 +16,10 @@ namespace NewsManagementAPI.Data
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (Debugger.IsAttached || isDevelopment)
-                optionsBuilder.UseNpgsql(@"Host=37.27.57.167; Port=5433; Database=news; Username=newsadmin; Password=MeJU?XNKJqd_D7_4");
-                //optionsBuilder.UseNpgsql(@"Host=localhost; Port=5432; Database=news; Username=postgres; Password=123456lolo");
+                optionsBuilder.UseNpgsql(@"Host=localhost; Port=5432; Database=news; Username=postgres; Password=123456lolo");
             else
                 optionsBuilder.UseNpgsql(@"Host=37.27.57.167; Port=5433; Database=news; Username=newsadmin; Password=MeJU?XNKJqd_D7_4");
         }
-        //protected override void OnModelCreating(ModelBuilder builder)
-        //{
-        //    //builder.Entity<NewsUserClaim>().HasOne(x => x.User).WithMany(x => x.Claims).HasForeignKey(x => x.UserId);
-        //    //builder.Entity<IdentityUserClaim<string>>()..HasOne(x => x.UserId).WithMany(x => x.Claims).HasForeignKey(x => x.UserId);
-        //    //builder.Entity<NewsUserClaim>().ToTable("AspNetUserClaims").Property(x => x.UserId)..HasColumnName("UserId");
-        //    builder.Entity<IdentityUserClaim<string>>().ToTable("AspNetUserClaims").Property(x => x.UserId).HasColumnName("NewsUserId");
-        //    base.OnModelCreating(builder);
-        //}
         public DbSet<NewsMaterial> NewsMaterials { get; set; }
         public DbSet<NewsMaterialHistory> NewsMaterialHistories { get; set; }
         public DbSet<NewsMaterialLog> NewsMaterialLogs { get; set; }
