@@ -196,8 +196,12 @@ namespace NewsManagementAPI.Controllers
                     return Done<bool>("Not found!", ResponseCode.NotFound);
                 if (newsMaterial.CurrentStatus >= NewsMaterialStatus.Reviewed)
                     return Done<bool>("تم تدقبق الخبر مسبقا", ResponseCode.BadRequest);
+                if (string.IsNullOrWhiteSpace(reviewedVM.Images))
+                    reviewedVM.Images = null;
                 if (reviewedVM.Images?.Split(',').Except(newsMaterial.Images?.Split(',') ?? []).Any() == true)
                     return Done<bool>("لا يمكنك إضافة الصور", ResponseCode.BadRequest);
+                if (string.IsNullOrWhiteSpace(reviewedVM.Attachments))
+                    reviewedVM.Attachments = null;
                 if (reviewedVM.Attachments?.Split(',').Except(newsMaterial.Attachments?.Split(',') ?? []).Any() == true)
                     return Done<bool>("لا يمكنك إضافة المرفقات", ResponseCode.BadRequest);
                 StringBuilder sb = new();
