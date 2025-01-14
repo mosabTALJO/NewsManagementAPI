@@ -279,6 +279,9 @@ namespace NewsManagementAPI.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ID"));
 
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Log")
                         .IsRequired()
                         .HasColumnType("text");

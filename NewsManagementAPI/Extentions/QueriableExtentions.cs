@@ -95,6 +95,7 @@ namespace NewsManagementAPI.Extentions
                     NewsUserID = a.NewsUserID,
                     NewsUserDisplayName = a.NewsUser!.DisplayName,
                     NewsMaterialID = a.NewsMaterialID,
+                    Date = a.Date,
                 }).ToList()
             });
         }

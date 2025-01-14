@@ -8,5 +8,6 @@
         public required string NewsUserID { get; set; }
         public NewsUser? NewsUser { get; set; }
         public required string Log { get; set; }
+        public DateTime Date { get; set; }
     }
 }
