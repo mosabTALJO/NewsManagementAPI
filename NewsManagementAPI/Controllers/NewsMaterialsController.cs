@@ -170,6 +170,7 @@ namespace NewsManagementAPI.Controllers
                             UserId = reviewerId,
                             Title = "Extremely Urgent",
                             Text = $"A new extremely urgent news material has been reported.",
+                            Topic= "Extremely Urgent",
                         });
                     }
                 }
@@ -519,7 +520,8 @@ namespace NewsManagementAPI.Controllers
             {
                 var count = await newsDbContext.NewsMaterials.Where(x => x.ID == publishedVM.ID)
                     .ExecuteUpdateAsync(p => p.SetProperty(x => x.CurrentUserID, x => null)
-                                              .SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Published));
+                                              .SetProperty(x => x.CurrentStatus, NewsMaterialStatus.Published)
+                                              .SetProperty(x => x.PublishDate, DateTime.UtcNow));
                 if (count == 0)
                     return Done<bool>("Not found!", ResponseCode.NotFound);
                 await newsDbContext.CreateNewsMaterialHistory(publishedVM.ID, NewsMaterialStatus.Published, User.Identity!.Name!, null);
