@@ -170,7 +170,7 @@ namespace NewsManagementAPI.Controllers
                             UserId = reviewerId,
                             Title = "Extremely Urgent",
                             Text = $"A new extremely urgent news material has been reported.",
-                            Topic= "Extremely Urgent",
+                            Topic = "ExtremelyUrgent",
                         });
                     }
                 }

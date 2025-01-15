@@ -9,6 +9,7 @@ namespace NewsManagementAPI.Services
     public interface INotificationService
     {
         Task AddNotification(Notification notification, DateTime? ScheduledDate = null);
+        //Task SendN
     }
     public class NotificationService : INotificationService
     {
