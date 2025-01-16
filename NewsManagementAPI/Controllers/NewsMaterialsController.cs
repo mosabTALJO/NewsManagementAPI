@@ -168,8 +168,8 @@ namespace NewsManagementAPI.Controllers
                         await notificationService.AddNotification(new()
                         {
                             UserId = reviewerId,
-                            Title = "Extremely Urgent",
-                            Text = $"A new extremely urgent news material has been reported.",
+                            Title = "خبر فوري جديد",
+                            Text = $"تم رصد خبر فوري جديد.",
                             Topic = "ExtremelyUrgent",
                         });
                     }
