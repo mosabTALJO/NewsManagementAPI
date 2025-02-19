@@ -46,7 +46,7 @@ namespace NewsManagementAPI.Helpers
         public static readonly Dictionary<NewsUserRole, NewsMaterialStatus[]> RoleAllowedStatuses = new()
         {
             { NewsUserRole.Admin, Enum.GetValues<NewsMaterialStatus>() },
-            { NewsUserRole.Reporter, [NewsMaterialStatus.Draft] },
+            { NewsUserRole.Reporter, [NewsMaterialStatus.Draft, NewsMaterialStatus.Reported] },
             { NewsUserRole.Reviewer, [NewsMaterialStatus.Reported] },
             { NewsUserRole.Editor, [NewsMaterialStatus.Reviewed, NewsMaterialStatus.AssignedForEditing, NewsMaterialStatus.Editing] },
             { NewsUserRole.EditingManager, [NewsMaterialStatus.Reviewed, NewsMaterialStatus.AssignedForEditing, NewsMaterialStatus.Editing] },
